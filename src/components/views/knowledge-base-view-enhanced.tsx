@@ -8,8 +8,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { memoryStore } from "@/lib/memory-store";
 import { Document as PDFDocument, Page, pdfjs } from 'react-pdf';
-import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
-import 'react-pdf/dist/esm/Page/TextLayer.css';
 
 // Set worker for PDF.js with CDN fallback
 if (typeof window !== 'undefined') {
@@ -133,7 +131,7 @@ export default function KnowledgeBaseViewEnhanced() {
       console.log('File size:', file.size);
       setPdfUrl(url);
       setPdfCurrentPage(1);
-      setNumPages(null); // Reset page count
+      setNumPages(0); // Reset page count
       
       // Also try to extract text for Q&A
       const formData = new FormData();
