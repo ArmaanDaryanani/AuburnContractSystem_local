@@ -25,12 +25,16 @@ export async function POST(request: NextRequest) {
         // Clean up the text - fix spacing issues
         let cleanText = data.text;
         
-        // Fix common PDF extraction issues
+        // Fix common PDF extraction issues more aggressively
         cleanText = cleanText
           .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between camelCase
           .replace(/(\w)([.!?])([A-Z])/g, '$1$2 $3') // Add space after sentence endings
+          .replace(/(\.)([A-Z])/g, '$1 $2') // Add space after period before capital letter
+          .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space when lowercase meets uppercase
           .replace(/(\d)([A-Za-z])/g, '$1 $2') // Add space between numbers and letters
           .replace(/([A-Za-z])(\d)/g, '$1 $2') // Add space between letters and numbers
+          .replace(/([.!?,:;])([A-Za-z])/g, '$1 $2') // Add space after punctuation
+          .replace(/([a-z]{2,})([A-Z])/g, '$1 $2') // Add space when word meets capital
           .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
           .trim();
         

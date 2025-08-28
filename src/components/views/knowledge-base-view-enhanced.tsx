@@ -312,6 +312,10 @@ export default function KnowledgeBaseViewEnhanced() {
               
               // This is actual content text
               if (data && !data.startsWith('{')) {
+                // Add a space between chunks to prevent word merging
+                if (accumulatedContent && !accumulatedContent.endsWith(' ') && !data.startsWith(' ')) {
+                  accumulatedContent += ' ';
+                }
                 accumulatedContent += data;
                 setStreamingContent(accumulatedContent);
               }
@@ -510,7 +514,7 @@ export default function KnowledgeBaseViewEnhanced() {
         </Card>
 
         {/* RAG Chat Interface */}
-        <Card className="h-[600px] mb-8">
+        <Card className="h-[700px] mb-8">
         <CardContent className="p-0 h-full">
           {showDocumentUpload ? (
             // Split View: Chat + Document Upload
