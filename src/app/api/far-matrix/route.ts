@@ -97,7 +97,6 @@ export async function GET(request: Request) {
     }
     
     // Parse FAR regulations from chunks
-    const farRegulations = [];
     const farSections = new Map();
     
     // Common FAR clauses relevant to Auburn
@@ -187,12 +186,22 @@ export async function GET(request: Request) {
       hasFullText: farSections.has(clause.clause.replace('FAR ', ''))
     }));
     
+    // Return in the format the frontend expects
     return NextResponse.json({
-      farMatrix: matrix,
+      regulations: matrix,  // Frontend expects 'regulations'
+      totalCount: matrix.length,
+      farMatrix: matrix,  // Also include for compatibility
       totalClauses: matrix.length,
       totalChunks: farChunks?.length || 0,
       searchTerm: search,
-      message: 'FAR Matrix loaded from knowledge base'
+      message: 'FAR Matrix loaded from knowledge base',
+      categories: {
+        'Indemnification': matrix.filter(m => m.title.toLowerCase().includes('indemnif')).length,
+        'Insurance': matrix.filter(m => m.title.toLowerCase().includes('insurance')).length,
+        'Intellectual Property': matrix.filter(m => m.title.toLowerCase().includes('data') || m.title.toLowerCase().includes('property')).length,
+        'Payment Terms': matrix.filter(m => m.title.toLowerCase().includes('payment')).length,
+        'Termination': matrix.filter(m => m.title.toLowerCase().includes('terminat')).length
+      }
     });
     
   } catch (error) {

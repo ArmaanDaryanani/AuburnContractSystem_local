@@ -80,10 +80,13 @@ export async function GET() {
       .from('knowledge_documents')
       .select('document_type, title');
     
-    // Log any errors but continue to show real data
-    if (docsError) console.error('[/api/metrics] Error fetching documents:', docsError);
-    if (embError) console.error('[/api/metrics] Error fetching embeddings:', embError);
-    if (typesError) console.error('[/api/metrics] Error fetching document types:', typesError);
+    // Log for debugging
+    console.log('[/api/metrics] Database stats:', {
+      totalDocs,
+      totalEmbeddings,
+      docTypesCount: docTypes?.length,
+      errors: { docsError, embError, typesError }
+    });
     
     const typeBreakdown = docTypes?.reduce((acc: any, doc) => {
       acc[doc.document_type] = (acc[doc.document_type] || 0) + 1;
@@ -92,14 +95,20 @@ export async function GET() {
     
     // Get actual chunk counts per document type
     const chunkCounts: any = {};
-    if (docTypes) {
-      for (const doc of docTypes) {
-        const { count } = await supabase
-          .from('document_embeddings')
-          .select('*', { count: 'exact', head: true })
-          .eq('metadata->>document_type', doc.document_type);
-        chunkCounts[doc.document_type] = count || 0;
-      }
+    
+    // Get all embeddings with their metadata
+    const { data: allEmbeddings } = await supabase
+      .from('document_embeddings')
+      .select('id, metadata');
+    
+    // Count chunks by document type
+    if (allEmbeddings) {
+      allEmbeddings.forEach((embedding) => {
+        const docType = embedding.metadata?.document_type;
+        if (docType) {
+          chunkCounts[docType] = (chunkCounts[docType] || 0) + 1;
+        }
+      });
     }
     
     // Calculate metrics with real data
