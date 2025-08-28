@@ -666,12 +666,34 @@ export default function KnowledgeBaseViewEnhanced() {
                     <div className="flex-1 overflow-y-auto p-4">
                       {pdfUrl && uploadedFile?.type === 'application/pdf' ? (
                         <div className="flex flex-col h-full">
-                          <div className="flex-1 overflow-hidden bg-gray-100 rounded-lg">
-                            <iframe 
-                              src={pdfUrl}
-                              className="w-full h-full"
-                              title="PDF Viewer"
-                            />
+                          <div className="flex-1 bg-gray-100 rounded-lg p-2" style={{ minHeight: '600px' }}>
+                            <object
+                              data={pdfUrl}
+                              type="application/pdf"
+                              className="w-full h-full rounded"
+                              style={{ minHeight: '580px' }}
+                            >
+                              <div className="flex flex-col items-center justify-center h-full p-8 text-gray-600">
+                                <FileText className="h-12 w-12 mb-4 text-gray-400" />
+                                <p className="text-sm font-medium mb-2">PDF Preview Not Available</p>
+                                <p className="text-xs text-center mb-4">Your browser doesn't support inline PDF viewing.</p>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const link = document.createElement('a');
+                                    link.href = pdfUrl;
+                                    link.download = uploadedFile.name;
+                                    link.click();
+                                  }}
+                                >
+                                  Download PDF
+                                </Button>
+                              </div>
+                            </object>
+                          </div>
+                          <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                            PDF loaded. The text has been extracted for Q&A below.
                           </div>
                         </div>
                       ) : (
