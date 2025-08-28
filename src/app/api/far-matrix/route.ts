@@ -1,16 +1,79 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const search = searchParams.get('search') || '';
     const limit = parseInt(searchParams.get('limit') || '50');
+    
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+      console.log('[/api/far-matrix] Supabase not configured, returning mock data');
+      // Return mock FAR data when Supabase is not configured
+      const mockFarRegulations = [
+        {
+          clause: 'FAR 52.228-7',
+          title: 'Insurance - Liability to Third Persons',
+          description: 'Contractor shall maintain insurance coverage',
+          auburnImpact: 'Auburn requires specific insurance limits',
+          status: 'active'
+        },
+        {
+          clause: 'FAR 28.106',
+          title: 'Indemnification',
+          description: 'Government indemnification restrictions',
+          auburnImpact: 'Auburn cannot provide indemnification as state entity',
+          status: 'critical'
+        },
+        {
+          clause: 'FAR 31.205-33',
+          title: 'Professional and Consultant Service Costs',
+          description: 'Allowability of consultant costs',
+          auburnImpact: 'Must follow Auburn procurement policies',
+          status: 'active'
+        },
+        {
+          clause: 'FAR 52.227-14',
+          title: 'Rights in Data - General',
+          description: 'Government rights to contractor data',
+          auburnImpact: 'Faculty retain IP rights per Auburn policy',
+          status: 'critical'
+        },
+        {
+          clause: 'FAR 52.232-1',
+          title: 'Payments',
+          description: 'Progress payment requirements',
+          auburnImpact: 'Auburn requires progress payments, not milestone',
+          status: 'active'
+        }
+      ];
+      
+      const filtered = search 
+        ? mockFarRegulations.filter(reg => 
+            reg.clause.toLowerCase().includes(search.toLowerCase()) ||
+            reg.title.toLowerCase().includes(search.toLowerCase()) ||
+            reg.description.toLowerCase().includes(search.toLowerCase())
+          )
+        : mockFarRegulations;
+      
+      return NextResponse.json({
+        regulations: filtered.slice(0, limit),
+        totalCount: filtered.length,
+        categories: {
+          'Indemnification': 1,
+          'Insurance': 1,
+          'Intellectual Property': 1,
+          'Payment Terms': 1,
+          'Professional Services': 1
+        }
+      });
+    }
+    
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
     
     // Get FAR regulations from embeddings
     let query = supabase

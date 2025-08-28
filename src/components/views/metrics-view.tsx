@@ -32,10 +32,13 @@ export default function MetricsView() {
       const response = await fetch('/api/metrics');
       if (response.ok) {
         const data = await response.json();
+        console.log('[MetricsView] Fetched metrics:', data);
         setMetrics(data);
+      } else {
+        console.error('[MetricsView] Failed to fetch metrics:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching metrics:', error);
+      console.error('[MetricsView] Error fetching metrics:', error);
     } finally {
       setLoading(false);
     }

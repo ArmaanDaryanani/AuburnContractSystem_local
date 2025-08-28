@@ -1,16 +1,95 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category') || 'all';
     const search = searchParams.get('search') || '';
+    
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+      console.log('[/api/auburn-policies] Supabase not configured, returning mock data');
+      // Return mock Auburn policies when Supabase is not configured
+      const mockPolicies = [
+        {
+          id: 'policy-1',
+          category: 'Procurement',
+          title: 'Indemnification Restrictions',
+          description: 'Auburn University cannot provide indemnification',
+          details: 'As a state entity, Auburn University is prohibited from indemnifying contractors or vendors. All indemnification clauses must flow from contractor to Auburn.',
+          status: 'mandatory',
+          alternatives: ['Contractor shall indemnify Auburn University...', 'Insurance coverage requirements']
+        },
+        {
+          id: 'policy-2',
+          category: 'Intellectual Property',
+          title: 'Faculty IP Rights',
+          description: 'Faculty retain rights to their intellectual property',
+          details: 'Under Auburn policy, faculty members retain ownership of intellectual property they create, except when specifically assigned or work-for-hire.',
+          status: 'mandatory',
+          alternatives: ['Non-exclusive license to Auburn', 'Shared IP arrangements']
+        },
+        {
+          id: 'policy-3',
+          category: 'Payment Terms',
+          title: 'Progress Payment Requirements',
+          description: 'Auburn requires progress payments, not milestone-based',
+          details: 'Payments must be structured as progress payments based on work completed, not tied to specific milestones or deliverables.',
+          status: 'mandatory',
+          alternatives: ['Monthly progress invoicing', 'Percentage completion payments']
+        },
+        {
+          id: 'policy-4',
+          category: 'Insurance',
+          title: 'State Self-Insurance',
+          description: 'Auburn is self-insured through State of Alabama',
+          details: 'Auburn University does not purchase commercial insurance. Coverage is provided through the State of Alabama self-insurance program.',
+          status: 'informational',
+          alternatives: []
+        },
+        {
+          id: 'policy-5',
+          category: 'Compliance',
+          title: 'State Procurement Laws',
+          description: 'Must comply with Alabama procurement regulations',
+          details: 'All contracts must comply with State of Alabama bid laws and procurement regulations, including competitive bidding requirements.',
+          status: 'mandatory',
+          alternatives: []
+        }
+      ];
+      
+      let filtered = mockPolicies;
+      
+      if (category !== 'all') {
+        filtered = filtered.filter(p => p.category.toLowerCase() === category.toLowerCase());
+      }
+      
+      if (search) {
+        filtered = filtered.filter(p => 
+          p.title.toLowerCase().includes(search.toLowerCase()) ||
+          p.description.toLowerCase().includes(search.toLowerCase()) ||
+          p.details.toLowerCase().includes(search.toLowerCase())
+        );
+      }
+      
+      return NextResponse.json({
+        policies: filtered,
+        categories: {
+          'Procurement': 1,
+          'Intellectual Property': 1,
+          'Payment Terms': 1,
+          'Insurance': 1,
+          'Compliance': 1
+        },
+        totalCount: filtered.length
+      });
+    }
+    
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
     
     // Get Auburn policy documents
     const { data: auburnDocs } = await supabase
