@@ -329,30 +329,30 @@ export default function DocumentQAView() {
                 
                 {/* Messages */}
                 <ScrollArea className="flex-1 px-6 py-4">
-                  <div className="space-y-4">
+                  <div className="space-y-4 pr-2">
                     {messages.map((message) => (
                       <div
                         key={message.id}
                         className={cn(
-                          "flex gap-3",
+                          "flex gap-3 w-full",
                           message.role === "user" ? "justify-end" : "justify-start"
                         )}
                       >
                         {message.role === "assistant" && (
-                          <Bot className="h-6 w-6 text-gray-500 mt-1" />
+                          <Bot className="h-6 w-6 text-gray-500 mt-1 flex-shrink-0" />
                         )}
                         <div
                           className={cn(
-                            "max-w-[85%] rounded-lg px-3 py-2",
+                            "min-w-0 max-w-[75%] rounded-lg px-4 py-2.5",
                             message.role === "user"
                               ? "bg-gray-900 text-white"
-                              : "bg-gray-100 text-gray-900"
+                              : "bg-gray-50 text-gray-900 border border-gray-200"
                           )}
                         >
                           {message.role === "user" ? (
-                            <p className="text-sm">{message.content}</p>
+                            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                           ) : (
-                            <div className="text-sm prose prose-sm max-w-none prose-gray">
+                            <div className="text-sm prose prose-sm max-w-none prose-gray break-words">
                               <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
                                 components={{
@@ -380,16 +380,16 @@ export default function DocumentQAView() {
                           )}
                         </div>
                         {message.role === "user" && (
-                          <User className="h-6 w-6 text-gray-500 mt-1" />
+                          <User className="h-6 w-6 text-gray-500 mt-1 flex-shrink-0" />
                         )}
                       </div>
                     ))}
                     
                     {isStreaming && streamingContent && (
                       <div className="flex gap-3 justify-start">
-                        <Bot className="h-6 w-6 text-gray-500 mt-1" />
-                        <div className="max-w-[85%] rounded-lg px-3 py-2 bg-gray-100">
-                          <div className="text-sm prose prose-sm max-w-none prose-gray">
+                        <Bot className="h-6 w-6 text-gray-500 mt-1 flex-shrink-0" />
+                        <div className="min-w-0 max-w-[75%] rounded-lg px-4 py-2.5 bg-gray-50 border border-gray-200">
+                          <div className="text-sm prose prose-sm max-w-none prose-gray break-words">
                             <ReactMarkdown>{streamingContent}</ReactMarkdown>
                           </div>
                           <Loader2 className="h-3 w-3 animate-spin mt-2" />
