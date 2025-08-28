@@ -328,13 +328,13 @@ export default function DocumentQAView() {
                 </div>
                 
                 {/* Messages */}
-                <ScrollArea className="flex-1 px-6 py-4">
+                <ScrollArea className="flex-1 px-6 py-4 overflow-hidden">
                   <div className="space-y-4 pr-2">
                     {messages.map((message) => (
                       <div
                         key={message.id}
                         className={cn(
-                          "flex gap-3 w-full",
+                          "flex gap-3",
                           message.role === "user" ? "justify-end" : "justify-start"
                         )}
                       >
@@ -343,23 +343,24 @@ export default function DocumentQAView() {
                         )}
                         <div
                           className={cn(
-                            "min-w-0 max-w-[75%] rounded-lg px-4 py-2.5",
+                            "overflow-hidden rounded-lg px-4 py-2.5",
                             message.role === "user"
-                              ? "bg-gray-900 text-white"
-                              : "bg-gray-50 text-gray-900 border border-gray-200"
+                              ? "bg-gray-900 text-white max-w-[70%]"
+                              : "bg-gray-50 text-gray-900 border border-gray-200 max-w-[calc(100%-2rem)]"
                           )}
                         >
                           {message.role === "user" ? (
-                            <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
+                            <p className="text-sm whitespace-pre-wrap break-words overflow-wrap-anywhere">{message.content}</p>
                           ) : (
-                            <div className="text-sm prose prose-sm max-w-none prose-gray break-words">
+                            <div className="text-sm prose prose-sm max-w-none prose-gray overflow-hidden">
                               <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                  p: ({children}) => <p className="mb-2">{children}</p>,
+                                  p: ({children}) => <p className="mb-2 break-words overflow-wrap-anywhere">{children}</p>,
                                   ul: ({children}) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
-                                  li: ({children}) => <li className="mb-1">{children}</li>,
+                                  li: ({children}) => <li className="mb-1 break-words overflow-wrap-anywhere">{children}</li>,
                                   strong: ({children}) => <strong className="font-bold">{children}</strong>,
+                                  code: ({children}) => <code className="break-all">{children}</code>,
                                 }}
                               >
                                 {message.content}
@@ -388,9 +389,17 @@ export default function DocumentQAView() {
                     {isStreaming && streamingContent && (
                       <div className="flex gap-3 justify-start">
                         <Bot className="h-6 w-6 text-gray-500 mt-1 flex-shrink-0" />
-                        <div className="min-w-0 max-w-[75%] rounded-lg px-4 py-2.5 bg-gray-50 border border-gray-200">
-                          <div className="text-sm prose prose-sm max-w-none prose-gray break-words">
-                            <ReactMarkdown>{streamingContent}</ReactMarkdown>
+                        <div className="overflow-hidden rounded-lg px-4 py-2.5 bg-gray-50 border border-gray-200 max-w-[calc(100%-2rem)]">
+                          <div className="text-sm prose prose-sm max-w-none prose-gray overflow-hidden">
+                            <ReactMarkdown
+                              components={{
+                                p: ({children}) => <p className="mb-2 break-words overflow-wrap-anywhere">{children}</p>,
+                                ul: ({children}) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
+                                li: ({children}) => <li className="mb-1 break-words overflow-wrap-anywhere">{children}</li>,
+                                strong: ({children}) => <strong className="font-bold">{children}</strong>,
+                                code: ({children}) => <code className="break-all">{children}</code>,
+                              }}
+                            >{streamingContent}</ReactMarkdown>
                           </div>
                           <Loader2 className="h-3 w-3 animate-spin mt-2" />
                         </div>
