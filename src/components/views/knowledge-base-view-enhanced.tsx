@@ -562,19 +562,19 @@ export default function KnowledgeBaseViewEnhanced() {
                           }`}
                         >
                           {message.role === "user" ? (
-                            message.content
+                            <p className="break-words">{message.content}</p>
                           ) : (
                             <div className="prose prose-sm max-w-none prose-gray">
                               <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                  p: ({children}) => <p className="mb-2">{children}</p>,
+                                  p: ({children}) => <p className="mb-2 break-words">{children}</p>,
                                   ul: ({children}) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
                                   ol: ({children}) => <ol className="list-decimal pl-5 mb-2">{children}</ol>,
-                                  li: ({children}) => <li className="mb-1">{children}</li>,
+                                  li: ({children}) => <li className="mb-1 break-words">{children}</li>,
                                   strong: ({children}) => <strong className="font-bold">{children}</strong>,
                                   em: ({children}) => <em className="italic">{children}</em>,
-                                  code: ({children}) => <code className="bg-gray-200 px-1 rounded">{children}</code>,
+                                  code: ({children}) => <code className="bg-gray-200 px-1 rounded break-all">{children}</code>,
                                   h3: ({children}) => <h3 className="font-semibold mt-2 mb-1">{children}</h3>,
                                 }}
                               >
@@ -593,7 +593,7 @@ export default function KnowledgeBaseViewEnhanced() {
                       <div className="flex gap-3 justify-start">
                         <Bot className="h-6 w-6 text-gray-500 mt-1" />
                         <div className="max-w-[80%] rounded-lg px-3 py-2 bg-gray-100 text-sm">
-                          <div className="prose prose-sm max-w-none prose-gray break-words">
+                          <div className="prose prose-sm max-w-none prose-gray">
                             <ReactMarkdown 
                               remarkPlugins={[remarkGfm]}
                               components={{
@@ -787,19 +787,19 @@ export default function KnowledgeBaseViewEnhanced() {
                           }`}
                         >
                           {message.role === "user" ? (
-                            message.content
+                            <p className="break-words">{message.content}</p>
                           ) : (
                             <div className="prose prose-sm max-w-none prose-gray">
                               <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
                                 components={{
-                                  p: ({children}) => <p className="mb-2">{children}</p>,
+                                  p: ({children}) => <p className="mb-2 break-words">{children}</p>,
                                   ul: ({children}) => <ul className="list-disc pl-5 mb-2">{children}</ul>,
                                   ol: ({children}) => <ol className="list-decimal pl-5 mb-2">{children}</ol>,
-                                  li: ({children}) => <li className="mb-1">{children}</li>,
+                                  li: ({children}) => <li className="mb-1 break-words">{children}</li>,
                                   strong: ({children}) => <strong className="font-bold">{children}</strong>,
                                   em: ({children}) => <em className="italic">{children}</em>,
-                                  code: ({children}) => <code className="bg-gray-200 px-1 rounded">{children}</code>,
+                                  code: ({children}) => <code className="bg-gray-200 px-1 rounded break-all">{children}</code>,
                                   h3: ({children}) => <h3 className="font-semibold mt-2 mb-1">{children}</h3>,
                                 }}
                               >
@@ -818,7 +818,7 @@ export default function KnowledgeBaseViewEnhanced() {
                       <div className="flex gap-3 justify-start">
                         <Bot className="h-6 w-6 text-gray-500 mt-1" />
                         <div className="max-w-[80%] rounded-lg px-3 py-2 bg-gray-100 text-sm">
-                          <div className="prose prose-sm max-w-none prose-gray break-words">
+                          <div className="prose prose-sm max-w-none prose-gray">
                             <ReactMarkdown 
                               remarkPlugins={[remarkGfm]}
                               components={{
