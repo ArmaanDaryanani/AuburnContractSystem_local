@@ -8,7 +8,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('📝 [/api/contract-stream] Request body:', JSON.stringify(body).substring(0, 200));
     // Support 'text' (for contract review), 'message', and 'query' (for knowledge base chat)
-    const { text, fileName, message, query, context, useRAG } = body;
+    const { text, fileName, message, query, context, useRAG, history, uploadedContent } = body;
     
     const contentToAnalyze = text || message || query;
     
@@ -51,12 +51,30 @@ KEY KNOWLEDGE AREAS:
 
 Provide helpful, accurate information based on Auburn's policies. Be conversational but professional.`;
 
-      userPrompt = contentToAnalyze;
+      // Build the prompt with conversation history and context
+      let fullPrompt = "";
+      
+      // Add uploaded document content if provided
+      if (uploadedContent) {
+        fullPrompt = `Document Content:\n${uploadedContent}\n\n`;
+      }
+      
+      // Add conversation history if provided
+      if (history && history.length > 0) {
+        fullPrompt += "Previous conversation:\n";
+        history.forEach((msg: any) => {
+          fullPrompt += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+        });
+        fullPrompt += "\n";
+      }
       
       // Add context if provided
       if (context) {
-        userPrompt = `Context: ${context}\n\nQuestion: ${contentToAnalyze}`;
+        fullPrompt += `Context: ${context}\n\n`;
       }
+      
+      fullPrompt += `Current Question: ${contentToAnalyze}`;
+      userPrompt = fullPrompt;
     } else {
       // Contract review prompt
       systemPrompt = `You are an Auburn University contract review AI. Analyze contracts for compliance with Auburn policies and FAR regulations.

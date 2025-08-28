@@ -244,12 +244,19 @@ export default function KnowledgeBaseViewEnhanced() {
         contextPrompt = `You are answering questions about Auburn University's knowledge base containing FAR regulations, Auburn policies, and contract templates.`;
       }
 
+      // Build conversation history for context
+      const conversationHistory = messages.slice(-10).map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+      
       // For PDFs, we need to handle them differently
       let requestBody: any = {
         query: userMessage.content,
         context: contextPrompt,
         documentFilter: selectedDocument?.id,
-        useRAG: true
+        useRAG: true,
+        history: conversationHistory
       };
 
       // If we have an uploaded file, include its content
@@ -291,8 +298,15 @@ export default function KnowledgeBaseViewEnhanced() {
           
           if (line.startsWith('data: ')) {
             try {
-              const data = line.slice(6);
-              if (data.trim()) {
+              const data = line.slice(6).trim();
+              
+              // Skip JSON messages like {"type":"start","message":"..."}
+              if (data.startsWith('{') && data.includes('"type"')) {
+                continue; // Skip JSON control messages
+              }
+              
+              // This is actual content text
+              if (data && !data.startsWith('{')) {
                 accumulatedContent += data;
                 setStreamingContent(accumulatedContent);
               }
