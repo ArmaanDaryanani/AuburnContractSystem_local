@@ -7,12 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { memoryStore } from "@/lib/memory-store";
-import { Document as PDFDocument, Page, pdfjs } from 'react-pdf';
-
-// Set worker for PDF.js with CDN fallback
-if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = `//cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
-}
+// Removed react-pdf - will use simple iframe instead
 import { 
   Database, 
   FileText, 
@@ -60,8 +55,6 @@ export default function KnowledgeBaseViewEnhanced() {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedText, setUploadedText] = useState<string>("");
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pdfCurrentPage, setPdfCurrentPage] = useState(1);
   
   // Chat states - Initialize from memory store
   const [messages, setMessages] = useState<Message[]>(() => {
@@ -130,8 +123,6 @@ export default function KnowledgeBaseViewEnhanced() {
       console.log('File type:', file.type);
       console.log('File size:', file.size);
       setPdfUrl(url);
-      setPdfCurrentPage(1);
-      setNumPages(0); // Reset page count
       
       // Also try to extract text for Q&A
       const formData = new FormData();
@@ -191,8 +182,6 @@ export default function KnowledgeBaseViewEnhanced() {
     setUploadedText("");
     setMessages([]);
     setChatInput("");
-    setPdfCurrentPage(1);
-    setNumPages(0);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -677,62 +666,12 @@ export default function KnowledgeBaseViewEnhanced() {
                     <div className="flex-1 overflow-y-auto p-4">
                       {pdfUrl && uploadedFile?.type === 'application/pdf' ? (
                         <div className="flex flex-col h-full">
-                          <div className="flex justify-center items-center mb-2 gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setPdfCurrentPage(Math.max(1, pdfCurrentPage - 1))}
-                              disabled={pdfCurrentPage <= 1}
-                            >
-                              <ChevronLeft className="h-4 w-4" />
-                              Previous
-                            </Button>
-                            <span className="text-sm text-gray-600 px-3">
-                              Page {pdfCurrentPage} of {numPages || '...'}
-                            </span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => setPdfCurrentPage(Math.min(numPages, pdfCurrentPage + 1))}
-                              disabled={pdfCurrentPage >= numPages}
-                            >
-                              Next
-                              <ChevronRight className="h-4 w-4" />
-                            </Button>
-                          </div>
-                          <div className="flex-1 overflow-auto bg-gray-100 rounded-lg flex justify-center">
-                            <PDFDocument
-                              file={pdfUrl}
-                              onLoadSuccess={({ numPages }) => {
-                                console.log('PDF loaded successfully with', numPages, 'pages');
-                                setNumPages(numPages);
-                              }}
-                              onLoadError={(error) => {
-                                console.error('PDF loading error:', error);
-                                // Fallback to text display if PDF fails
-                                setPdfUrl(null);
-                              }}
-                              loading={
-                                <div className="flex items-center justify-center p-8">
-                                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-                                </div>
-                              }
-                              error={
-                                <div className="flex flex-col items-center justify-center p-8 text-red-600">
-                                  <p className="text-sm font-medium">Failed to load PDF file.</p>
-                                  <p className="text-xs mt-2">Displaying extracted text instead.</p>
-                                </div>
-                              }
-                              className="max-w-full"
-                            >
-                              <Page
-                                pageNumber={pdfCurrentPage}
-                                className="shadow-lg"
-                                renderTextLayer={false}
-                                renderAnnotationLayer={false}
-                                width={400}
-                              />
-                            </PDFDocument>
+                          <div className="flex-1 overflow-hidden bg-gray-100 rounded-lg">
+                            <iframe 
+                              src={pdfUrl}
+                              className="w-full h-full"
+                              title="PDF Viewer"
+                            />
                           </div>
                         </div>
                       ) : (
