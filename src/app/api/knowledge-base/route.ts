@@ -12,18 +12,15 @@ function getSupabaseClient() {
   return createClient(url, key);
 }
 
-export const runtime = 'edge'; // Force edge runtime
 export const dynamic = 'force-dynamic'; // Force dynamic rendering
 
 export async function GET() {
   try {
     console.log('[/api/knowledge-base] Starting GET request');
     
-    // Always return mock data for now
-    const shouldUseMock = true;
-    
-    if (shouldUseMock || !process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
-      console.log('[/api/knowledge-base] Returning mock data');
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+      console.log('[/api/knowledge-base] Supabase not configured, returning mock data');
       // Return mock data when Supabase is not configured
       return NextResponse.json({
         documents: [
