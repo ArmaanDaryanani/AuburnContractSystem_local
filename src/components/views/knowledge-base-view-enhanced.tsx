@@ -520,9 +520,9 @@ export default function KnowledgeBaseViewEnhanced() {
         <CardContent className="p-0 h-full">
           {showDocumentUpload ? (
             // Split View: Chat + Document Upload
-            <div className="grid grid-cols-2 h-full">
+            <div className="grid grid-cols-2 h-full overflow-hidden">
               {/* Left: Chat */}
-              <div className="border-r border-gray-200 flex flex-col h-full">
+              <div className="border-r border-gray-200 flex flex-col h-full overflow-hidden">
                 <div className="p-4 border-b border-gray-100 flex-shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -542,7 +542,7 @@ export default function KnowledgeBaseViewEnhanced() {
                   </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4 min-h-0">
+                <div className="flex-1 overflow-y-auto p-4">
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <div
