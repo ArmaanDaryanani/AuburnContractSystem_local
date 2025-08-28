@@ -6,26 +6,58 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { text, fileName } = body;
+    // Support both 'text' (for contract review) and 'message' (for knowledge base chat)
+    const { text, fileName, message, context, useRAG } = body;
+    
+    const contentToAnalyze = text || message;
     
     console.log('📄 [/api/contract-stream] Processing:', {
       fileName,
-      textLength: text?.length,
-      hasText: !!text
+      hasText: !!text,
+      hasMessage: !!message,
+      useRAG: !!useRAG,
+      contentLength: contentToAnalyze?.length
     });
 
-    if (!text) {
-      console.error('❌ [/api/contract-stream] No text provided');
+    if (!contentToAnalyze) {
+      console.error('❌ [/api/contract-stream] No content provided');
       return new Response(
-        JSON.stringify({ error: 'No contract text provided' }),
+        JSON.stringify({ error: 'No content provided' }),
         { status: 400, headers: { 'Content-Type': 'application/json' } }
       );
     }
 
     const client = new OpenRouterStreamingClient();
     
-    // Auburn-specific system prompt
-    const systemPrompt = `You are an Auburn University contract review AI. Analyze contracts for compliance with Auburn policies and FAR regulations.
+    // Determine if this is a knowledge base query or contract analysis
+    const isKnowledgeBaseQuery = !!message && !text;
+    
+    let systemPrompt: string;
+    let userPrompt: string;
+    
+    if (isKnowledgeBaseQuery) {
+      // Knowledge Base Assistant prompt
+      systemPrompt = `You are Auburn University's Knowledge Base Assistant. You have access to Auburn's contract policies, FAR regulations, and compliance guidelines.
+
+KEY KNOWLEDGE AREAS:
+- Auburn University procurement policies and restrictions
+- Federal Acquisition Regulation (FAR) compliance
+- State of Alabama contracting laws
+- Intellectual property policies
+- Payment terms and indemnification restrictions
+- Insurance and liability requirements
+
+Provide helpful, accurate information based on Auburn's policies. Be conversational but professional.`;
+
+      userPrompt = contentToAnalyze;
+      
+      // Add context if provided
+      if (context) {
+        userPrompt = `Context: ${context}\n\nQuestion: ${contentToAnalyze}`;
+      }
+    } else {
+      // Contract review prompt
+      systemPrompt = `You are an Auburn University contract review AI. Analyze contracts for compliance with Auburn policies and FAR regulations.
 
 KEY POLICIES:
 - Auburn cannot provide indemnification (state entity restriction)
@@ -51,12 +83,13 @@ Analyze the contract and return a JSON array of issues. Each issue should have:
 
 Be thorough and identify ALL compliance issues.`;
 
-    const userPrompt = `Analyze this contract for Auburn University compliance:
+      userPrompt = `Analyze this contract for Auburn University compliance:
 
 CONTRACT TEXT:
-${text.substring(0, 10000)}
+${contentToAnalyze.substring(0, 10000)}
 
 Identify all compliance issues with Auburn policies and suggest alternatives.`;
+    }
 
     console.log('📨 [/api/contract-stream] Sending to OpenRouter:', {
       systemPromptLength: systemPrompt.length,
@@ -90,52 +123,61 @@ Identify all compliance issues with Auburn policies and suggest alternatives.`;
             if (data.type === 'content') {
               fullContent += data.content;
               
-              // Send progress update
-              controller.enqueue(new TextEncoder().encode(
-                `data: {"type":"progress","message":"Analyzing contract..."}\n\n`
-              ));
-              
-              // Try to parse JSON if we have complete array
-              if (fullContent.includes('[') && fullContent.includes(']')) {
-                try {
-                  const jsonMatch = fullContent.match(/\[[\s\S]*\]/);
-                  if (jsonMatch) {
-                    const issues = JSON.parse(jsonMatch[0]);
-                    console.log(`✅ [/api/contract-stream] Found ${issues.length} issues`);
-                    
-                    // Send each issue
-                    for (const issue of issues) {
-                      controller.enqueue(new TextEncoder().encode(
-                        `data: ${JSON.stringify({
-                          type: 'issue',
-                          data: {
-                            ...issue,
-                            confidence: issue.confidence || 85
-                          }
-                        })}\n\n`
-                      ));
+              if (isKnowledgeBaseQuery) {
+                // For knowledge base queries, stream the content directly
+                controller.enqueue(new TextEncoder().encode(
+                  `data: ${data.content}\n\n`
+                ));
+              } else {
+                // For contract analysis, try to parse JSON
+                controller.enqueue(new TextEncoder().encode(
+                  `data: {"type":"progress","message":"Analyzing contract..."}\n\n`
+                ));
+                
+                // Try to parse JSON if we have complete array
+                if (fullContent.includes('[') && fullContent.includes(']')) {
+                  try {
+                    const jsonMatch = fullContent.match(/\[[\s\S]*\]/);
+                    if (jsonMatch) {
+                      const issues = JSON.parse(jsonMatch[0]);
+                      console.log(`✅ [/api/contract-stream] Found ${issues.length} issues`);
+                      
+                      // Send each issue
+                      for (const issue of issues) {
+                        controller.enqueue(new TextEncoder().encode(
+                          `data: ${JSON.stringify({
+                            type: 'issue',
+                            data: {
+                              ...issue,
+                              confidence: issue.confidence || 85
+                            }
+                          })}\n\n`
+                        ));
+                      }
+                      issuesFound = issues;
                     }
-                    issuesFound = issues;
+                  } catch (e) {
+                    console.log('📝 [/api/contract-stream] Still collecting JSON...');
                   }
-                } catch (e) {
-                  console.log('📝 [/api/contract-stream] Still collecting JSON...');
                 }
               }
             } else if (data.type === 'done') {
               console.log('✅ [/api/contract-stream] Stream complete');
               
-              // Send summary
-              controller.enqueue(new TextEncoder().encode(
-                `data: ${JSON.stringify({
-                  type: 'complete',
-                  summary: {
-                    totalIssues: issuesFound.length,
-                    highSeverity: issuesFound.filter((i: any) => i.severity === 'HIGH').length,
-                    mediumSeverity: issuesFound.filter((i: any) => i.severity === 'MEDIUM').length,
-                    lowSeverity: issuesFound.filter((i: any) => i.severity === 'LOW').length
-                  }
-                })}\n\n`
-              ));
+              if (!isKnowledgeBaseQuery && issuesFound.length > 0) {
+                // Send summary for contract analysis
+                controller.enqueue(new TextEncoder().encode(
+                  `data: ${JSON.stringify({
+                    type: 'complete',
+                    summary: {
+                      totalIssues: issuesFound.length,
+                      highSeverity: issuesFound.filter((i: any) => i.severity === 'HIGH').length,
+                      mediumSeverity: issuesFound.filter((i: any) => i.severity === 'MEDIUM').length,
+                      lowSeverity: issuesFound.filter((i: any) => i.severity === 'LOW').length
+                    }
+                  })}\n\n`
+                ));
+              }
               
               controller.enqueue(new TextEncoder().encode('data: [DONE]\n\n'));
               controller.close();
