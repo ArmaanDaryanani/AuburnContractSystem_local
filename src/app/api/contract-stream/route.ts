@@ -1,6 +1,9 @@
 import { NextRequest } from 'next/server';
 import { OpenRouterStreamingClient } from '@/lib/openrouter-streaming';
 
+export const runtime = 'edge'; // Use edge runtime for better streaming
+export const maxDuration = 60; // 60 seconds for larger documents
+
 export async function POST(request: NextRequest) {
   console.log('🚀 [/api/contract-stream] Received request');
   

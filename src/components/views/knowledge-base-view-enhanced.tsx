@@ -260,15 +260,21 @@ export default function KnowledgeBaseViewEnhanced() {
         history: conversationHistory
       };
 
-      // If we have an uploaded file, include its content
+      // If we have an uploaded file, include its content (truncated to prevent payload too large)
       if (uploadedFile) {
+        // Truncate to first 50KB of text to avoid payload limits
+        const maxLength = 50000; // 50KB should be safe
+        const truncatedText = uploadedText.length > maxLength 
+          ? uploadedText.substring(0, maxLength) + '\n\n[Document truncated for analysis...]'
+          : uploadedText;
+          
         if (uploadedFile.type === 'application/pdf') {
-          // For PDFs, send the file itself if needed, or use extracted text
-          requestBody.uploadedContent = uploadedText;
+          // For PDFs, send the truncated extracted text
+          requestBody.uploadedContent = truncatedText;
           requestBody.fileType = 'pdf';
           requestBody.fileName = uploadedFile.name;
         } else {
-          requestBody.uploadedContent = uploadedText;
+          requestBody.uploadedContent = truncatedText;
           requestBody.fileType = 'text';
         }
       }
