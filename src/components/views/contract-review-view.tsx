@@ -770,33 +770,33 @@ ${contractText.substring(0, 1000)}${contractText.length > 1000 ? '...' : ''}
                   </div>
 
                   {/* Chat Messages */}
-                  <ScrollArea className="h-[400px] pr-4 overflow-y-auto">
-                    <div className="space-y-4">
+                  <ScrollArea className="h-[450px] w-full">
+                    <div className="space-y-4 pr-4">
                       {messages.map((message) => (
                         <div
                           key={message.id}
                           className={cn(
-                            "flex gap-3",
+                            "flex gap-3 w-full",
                             message.role === "user" ? "justify-end" : "justify-start"
                           )}
                         >
                           {message.role === "assistant" && (
-                            <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                            <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                               <Bot className="h-4 w-4 text-gray-600" />
                             </div>
                           )}
                           <div
                             className={cn(
-                              "max-w-[85%] rounded-lg px-3 py-2",
+                              "min-w-0 max-w-[75%] rounded-lg px-4 py-2.5",
                               message.role === "user"
                                 ? "bg-gray-900 text-white"
-                                : "bg-gray-100 text-gray-900"
+                                : "bg-gray-50 text-gray-900 border border-gray-200"
                             )}
                           >
                             {message.role === "user" ? (
-                              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                              <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                             ) : (
-                              <div className="text-sm prose prose-sm max-w-none prose-gray">
+                              <div className="text-sm prose prose-sm max-w-none prose-gray break-words">
                                 <ReactMarkdown 
                                   remarkPlugins={[remarkGfm]}
                                   components={{
@@ -817,7 +817,7 @@ ${contractText.substring(0, 1000)}${contractText.length > 1000 ? '...' : ''}
                             )}
                           </div>
                           {message.role === "user" && (
-                            <div className="h-7 w-7 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0">
+                            <div className="h-7 w-7 rounded-full bg-gray-900 flex items-center justify-center flex-shrink-0 mt-0.5">
                               <User className="h-4 w-4 text-white" />
                             </div>
                           )}
@@ -826,11 +826,11 @@ ${contractText.substring(0, 1000)}${contractText.length > 1000 ? '...' : ''}
                       
                       {/* Streaming message */}
                       {isStreaming && streamingContent && (
-                        <div className="flex gap-3 justify-start">
-                          <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0">
+                        <div className="flex gap-3 justify-start w-full">
+                          <div className="h-7 w-7 rounded-full bg-gray-100 flex items-center justify-center flex-shrink-0 mt-0.5">
                             <Bot className="h-4 w-4 text-gray-600 animate-pulse" />
                           </div>
-                          <div className="max-w-[85%] rounded-lg px-3 py-2 bg-gray-100 text-gray-900">
+                          <div className="min-w-0 max-w-[75%] rounded-lg px-4 py-2.5 bg-gray-50 text-gray-900 border border-gray-200">
                             <div className="text-sm prose prose-sm max-w-none prose-gray">
                               <ReactMarkdown 
                                 remarkPlugins={[remarkGfm]}
