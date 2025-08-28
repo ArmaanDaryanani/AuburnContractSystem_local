@@ -10,7 +10,12 @@ function getSupabaseClient() {
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!url || !key) {
-      throw new Error('Supabase environment variables not configured');
+      console.error('Supabase config missing:', {
+        hasUrl: !!url,
+        hasKey: !!key,
+        urlPrefix: url?.substring(0, 30)
+      });
+      throw new Error(`Supabase environment variables not configured. URL: ${!!url}, Key: ${!!key}`);
     }
     
     supabase = createClient(url, key);
