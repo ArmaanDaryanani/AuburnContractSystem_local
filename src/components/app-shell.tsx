@@ -41,7 +41,7 @@ export function AppShell() {
 
   return (
     <div className="flex h-screen bg-white">
-      <NavigationMinimal currentView={currentView} onViewChange={setCurrentView} />
+      <NavigationMinimal />
       
       <div className="flex-1 overflow-y-auto">
         {renderView()}

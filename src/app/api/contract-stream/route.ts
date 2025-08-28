@@ -84,7 +84,7 @@ Identify all compliance issues with Auburn policies and suggest alternatives.`;
           console.log('📡 [/api/contract-stream] Got streaming response');
           
           let fullContent = '';
-          let issuesFound = [];
+          let issuesFound: any[] = [];
           
           await client.processStream(response, (data) => {
             if (data.type === 'content') {

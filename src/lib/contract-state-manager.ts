@@ -40,11 +40,11 @@ export class ContractStateManager {
   static saveState(state: Partial<ContractState>) {
     try {
       const currentState = this.getState();
-      const newState: ContractState = {
+      const newState = {
         ...currentState,
         ...state,
         lastUpdated: new Date().toISOString()
-      };
+      } as ContractState;
       
       localStorage.setItem(STATE_KEY, JSON.stringify(newState));
       return true;

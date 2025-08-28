@@ -57,7 +57,7 @@ export async function searchSimilarDocuments(
       query_embedding: queryEmbedding,
       match_count: limit,
       filter_type: documentType || null
-    });
+    } as any);
     
     if (error) {
       console.error('Error searching documents:', error);
@@ -84,7 +84,7 @@ export async function getAuburnPolicyContext(
     const { data, error } = await getSupabaseClient().rpc('get_auburn_policy_context', {
       query_embedding: queryEmbedding,
       match_count: limit
-    });
+    } as any);
     
     if (error) {
       console.error('Error getting policy context:', error);
@@ -111,7 +111,7 @@ export async function getRAGContext(
     const { data, error } = await getSupabaseClient().rpc('get_rag_context', {
       query_embedding: queryEmbedding,
       context_size: contextSize
-    });
+    } as any);
     
     if (error) {
       console.error('Error getting RAG context:', error);
@@ -136,7 +136,7 @@ export async function searchFARViolations(
     const { data, error } = await getSupabaseClient().rpc('search_far_violations', {
       query_text: contractClause,
       match_count: limit
-    });
+    } as any);
     
     if (error) {
       console.error('Error searching FAR violations:', error);
@@ -163,7 +163,7 @@ export async function findSimilarContracts(
     const { data, error } = await getSupabaseClient().rpc('find_similar_contracts', {
       query_embedding: queryEmbedding,
       match_count: limit
-    });
+    } as any);
     
     if (error) {
       console.error('Error finding similar contracts:', error);
@@ -193,14 +193,14 @@ export async function searchKnowledgeBase(
       query_embedding: queryEmbedding,
       match_count: limit,
       filter_type: null // Search all document types
-    });
+    } as any);
     
     if (error) {
       console.error('Error searching knowledge base:', error);
       throw error;
     }
     
-    console.log(`[RAG] Knowledge base search for "${query.substring(0, 50)}..." returned ${data?.length || 0} results`);
+    console.log(`[RAG] Knowledge base search for "${query.substring(0, 50)}..." returned ${(data as any)?.length || 0} results`);
     
     return data || [];
   } catch (error) {

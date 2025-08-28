@@ -127,7 +127,7 @@ export async function ingestDocument(
         content,
         document_type: documentType,
         metadata
-      })
+      } as any)
       .select()
       .single();
     
@@ -136,7 +136,7 @@ export async function ingestDocument(
       throw docError;
     }
     
-    console.log(`✅ Document stored with ID: ${document.id}`);
+    console.log(`✅ Document stored with ID: ${(document as any)?.id}`);
     
     // 2. Chunk the content
     const chunks = chunkText(content, 1000, 200);
@@ -149,7 +149,7 @@ export async function ingestDocument(
       const { error: embError } = await getSupabaseClient()
         .from('document_embeddings')
         .insert({
-          document_id: document.id,
+          document_id: (document as any).id,
           chunk_text: chunks[i],
           chunk_index: i,
           embedding,
@@ -159,7 +159,7 @@ export async function ingestDocument(
             chunk_number: i + 1,
             total_chunks: chunks.length
           }
-        });
+        } as any);
       
       if (embError) {
         console.error(`Error storing embedding for chunk ${i}:`, embError);
@@ -169,7 +169,7 @@ export async function ingestDocument(
     }
     
     console.log(`✅ Successfully ingested document: ${title}`);
-    return document.id;
+    return (document as any).id;
     
   } catch (error) {
     console.error('Error ingesting document:', error);

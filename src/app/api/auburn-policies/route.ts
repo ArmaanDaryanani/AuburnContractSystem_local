@@ -154,7 +154,7 @@ export async function GET(request: Request) {
     return NextResponse.json({
       policies: filteredPolicies,
       totalPolicies: filteredPolicies.length,
-      categories: [...new Set(policies.map(p => p.category))],
+      categories: Array.from(new Set(policies.map(p => p.category))),
       documentsLoaded: auburnDocs?.length || 0,
       message: 'Auburn policies loaded from knowledge base'
     });
