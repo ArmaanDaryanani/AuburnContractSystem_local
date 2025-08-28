@@ -21,6 +21,62 @@ export async function GET() {
       hasServiceKey: !!process.env.SUPABASE_SERVICE_KEY
     });
     
+    // Check if Supabase is configured
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+      console.log('[/api/knowledge-base] Supabase not configured, returning mock data');
+      // Return mock data when Supabase is not configured
+      return NextResponse.json({
+        documents: [
+          {
+            id: 'mock-1',
+            title: 'FAR Clauses Matrix',
+            type: 'far_matrix',
+            status: 'indexed',
+            chunks: 150,
+            embeddingCount: 150,
+            characterCount: 45000,
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 'mock-2',
+            title: 'Auburn Procurement Policies',
+            type: 'auburn_policy',
+            status: 'indexed',
+            chunks: 75,
+            embeddingCount: 75,
+            characterCount: 22500,
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 'mock-3',
+            title: 'Standard Contract Template',
+            type: 'contract_template',
+            status: 'indexed',
+            chunks: 50,
+            embeddingCount: 50,
+            characterCount: 15000,
+            createdAt: new Date().toISOString()
+          }
+        ],
+        statistics: {
+          totalDocuments: 3,
+          totalChunks: 275,
+          totalEmbeddings: 275,
+          totalCharacters: 82500,
+          documentTypes: {
+            far_matrix: 1,
+            auburn_policy: 1,
+            contract_template: 1
+          },
+          indexingStatus: {
+            indexed: 3,
+            pending: 0
+          }
+        },
+        lastUpdated: new Date().toISOString()
+      });
+    }
+    
     const supabase = getSupabaseClient();
     
     // Get all documents from knowledge base

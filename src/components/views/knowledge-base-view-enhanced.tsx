@@ -929,7 +929,7 @@ export default function KnowledgeBaseViewEnhanced() {
           ) : (
             // Full Width: General Chat
             <div className="h-full flex flex-col">
-              <div className="p-4 border-b border-gray-100">
+              <div className="p-4 border-b border-gray-100 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Bot className="h-5 w-5 text-gray-600" />
@@ -946,7 +946,7 @@ export default function KnowledgeBaseViewEnhanced() {
                 </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6">
+              <div className="flex-1 overflow-y-auto p-6 min-h-0">
                 <div className="max-w-2xl mx-auto">
                   {messages.length === 0 ? (
                     <div className="text-center py-12">
@@ -1068,7 +1068,7 @@ export default function KnowledgeBaseViewEnhanced() {
                 </div>
               </div>
               
-              <div className="p-4 border-t border-gray-100">
+              <div className="p-4 border-t border-gray-100 flex-shrink-0">
                 <div className="max-w-2xl mx-auto flex gap-2">
                   <Textarea
                     value={chatInput}
