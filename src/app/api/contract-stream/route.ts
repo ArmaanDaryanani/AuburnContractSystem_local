@@ -6,15 +6,17 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    // Support both 'text' (for contract review) and 'message' (for knowledge base chat)
-    const { text, fileName, message, context, useRAG } = body;
+    console.log('📝 [/api/contract-stream] Request body:', JSON.stringify(body).substring(0, 200));
+    // Support 'text' (for contract review), 'message', and 'query' (for knowledge base chat)
+    const { text, fileName, message, query, context, useRAG } = body;
     
-    const contentToAnalyze = text || message;
+    const contentToAnalyze = text || message || query;
     
     console.log('📄 [/api/contract-stream] Processing:', {
       fileName,
       hasText: !!text,
       hasMessage: !!message,
+      hasQuery: !!query,
       useRAG: !!useRAG,
       contentLength: contentToAnalyze?.length
     });
@@ -30,7 +32,7 @@ export async function POST(request: NextRequest) {
     const client = new OpenRouterStreamingClient();
     
     // Determine if this is a knowledge base query or contract analysis
-    const isKnowledgeBaseQuery = !!message && !text;
+    const isKnowledgeBaseQuery = (!!query || !!message) && !text;
     
     let systemPrompt: string;
     let userPrompt: string;

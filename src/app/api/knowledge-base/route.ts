@@ -14,6 +14,13 @@ function getSupabaseClient() {
 
 export async function GET() {
   try {
+    console.log('[/api/knowledge-base] Starting GET request');
+    console.log('[/api/knowledge-base] Environment check:', {
+      hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      hasServiceKey: !!process.env.SUPABASE_SERVICE_KEY
+    });
+    
     const supabase = getSupabaseClient();
     
     // Get all documents from knowledge base
@@ -75,7 +82,16 @@ export async function GET() {
     
   } catch (error) {
     console.error('Error fetching knowledge base:', error);
-    return NextResponse.json({ error: 'Failed to fetch knowledge base' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return NextResponse.json({ 
+      error: 'Failed to fetch knowledge base',
+      details: errorMessage,
+      envCheck: {
+        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        hasServiceKey: !!process.env.SUPABASE_SERVICE_KEY
+      }
+    }, { status: 500 });
   }
 }
 
