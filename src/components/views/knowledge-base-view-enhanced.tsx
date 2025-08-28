@@ -8,9 +8,13 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { memoryStore } from "@/lib/memory-store";
 import { Document as PDFDocument, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
+import 'react-pdf/dist/esm/Page/TextLayer.css';
 
-// Set worker for PDF.js
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+// Set worker for PDF.js with CDN fallback
+if (typeof window !== 'undefined') {
+  pdfjs.GlobalWorkerOptions.workerSrc = `//cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
+}
 import { 
   Database, 
   FileText, 
@@ -76,6 +80,16 @@ export default function KnowledgeBaseViewEnhanced() {
   useEffect(() => {
     fetchKnowledgeBase();
   }, []);
+  
+  // Cleanup blob URL when component unmounts or PDF changes
+  useEffect(() => {
+    return () => {
+      if (pdfUrl) {
+        console.log('Cleaning up PDF URL:', pdfUrl);
+        URL.revokeObjectURL(pdfUrl);
+      }
+    };
+  }, [pdfUrl]);
 
   // Save messages to memory store
   useEffect(() => {
@@ -114,8 +128,12 @@ export default function KnowledgeBaseViewEnhanced() {
     if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
       // Create object URL for PDF viewer
       const url = URL.createObjectURL(file);
+      console.log('Created PDF URL:', url);
+      console.log('File type:', file.type);
+      console.log('File size:', file.size);
       setPdfUrl(url);
       setPdfCurrentPage(1);
+      setNumPages(null); // Reset page count
       
       // Also try to extract text for Q&A
       const formData = new FormData();
@@ -687,7 +705,26 @@ export default function KnowledgeBaseViewEnhanced() {
                           <div className="flex-1 overflow-auto bg-gray-100 rounded-lg flex justify-center">
                             <PDFDocument
                               file={pdfUrl}
-                              onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                              onLoadSuccess={({ numPages }) => {
+                                console.log('PDF loaded successfully with', numPages, 'pages');
+                                setNumPages(numPages);
+                              }}
+                              onLoadError={(error) => {
+                                console.error('PDF loading error:', error);
+                                // Fallback to text display if PDF fails
+                                setPdfUrl(null);
+                              }}
+                              loading={
+                                <div className="flex items-center justify-center p-8">
+                                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                                </div>
+                              }
+                              error={
+                                <div className="flex flex-col items-center justify-center p-8 text-red-600">
+                                  <p className="text-sm font-medium">Failed to load PDF file.</p>
+                                  <p className="text-xs mt-2">Displaying extracted text instead.</p>
+                                </div>
+                              }
                               className="max-w-full"
                             >
                               <Page
