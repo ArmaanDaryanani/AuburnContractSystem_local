@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const runtime = 'edge'; // Force edge runtime
+export const dynamic = 'force-dynamic'; // Force dynamic rendering
+
 export async function GET() {
   try {
-    // Check if Supabase is configured
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
-      console.log('[/api/metrics] Supabase not configured, returning mock data');
+    // Always return mock data for now
+    const shouldUseMock = true;
+    
+    if (shouldUseMock || !process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+      console.log('[/api/metrics] Returning mock data');
       // Return mock data when Supabase is not configured
       return NextResponse.json({
         overview: {

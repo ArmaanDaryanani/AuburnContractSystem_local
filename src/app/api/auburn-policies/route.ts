@@ -1,15 +1,20 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
+export const runtime = 'edge'; // Force edge runtime
+export const dynamic = 'force-dynamic'; // Force dynamic rendering
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category') || 'all';
     const search = searchParams.get('search') || '';
     
-    // Check if Supabase is configured
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
-      console.log('[/api/auburn-policies] Supabase not configured, returning mock data');
+    // Always return mock data for now
+    const shouldUseMock = true;
+    
+    if (shouldUseMock || !process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+      console.log('[/api/auburn-policies] Returning mock data');
       // Return mock Auburn policies when Supabase is not configured
       const mockPolicies = [
         {
