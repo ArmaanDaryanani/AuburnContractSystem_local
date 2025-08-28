@@ -1,0 +1,140 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { buildEnhancedPrompt } from '@/lib/rag/rag-search';
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
+export async function POST(request: NextRequest) {
+  try {
+    const { contractText, fileName } = await request.json();
+    
+    if (!contractText) {
+      return NextResponse.json(
+        { error: 'Contract text is required' },
+        { status: 400 }
+      );
+    }
+    
+    console.log('🔍 Starting RAG-enhanced contract analysis...');
+    
+    // Save contract to database
+    const { data: contract, error: contractError } = await supabase
+      .from('contracts')
+      .insert({
+        title: fileName || 'Unnamed Contract',
+        file_name: fileName,
+        contract_text: contractText,
+        status: 'analyzing'
+      })
+      .select()
+      .single();
+    
+    if (contractError) {
+      console.error('Error saving contract:', contractError);
+    }
+    
+    // Build enhanced prompt with RAG context
+    const enhancedPrompt = await buildEnhancedPrompt(contractText, true);
+    
+    console.log('📝 Enhanced prompt built with RAG context');
+    
+    // Send to OpenRouter for analysis
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'HTTP-Referer': 'https://auburn.edu',
+        'X-Title': 'Auburn Contract Review',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: process.env.OPENROUTER_MODEL || 'google/gemini-2.0-flash',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an expert contract analyst for Auburn University. 
+                     Analyze contracts for compliance with Auburn policies and FAR requirements.
+                     Always reference specific policies when identifying violations.
+                     Provide structured JSON responses.`
+          },
+          {
+            role: 'user',
+            content: enhancedPrompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 4000,
+        response_format: { type: "json_object" }
+      }),
+    });
+    
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('OpenRouter API error:', error);
+      return NextResponse.json(
+        { error: 'Failed to analyze contract' },
+        { status: 500 }
+      );
+    }
+    
+    const result = await response.json();
+    const analysisContent = result.choices[0].message.content;
+    
+    let analysis;
+    try {
+      analysis = JSON.parse(analysisContent);
+    } catch (e) {
+      // If not valid JSON, create structured response
+      analysis = {
+        violations: [],
+        confidence: 0.85,
+        summary: analysisContent
+      };
+    }
+    
+    // Save analysis results to database
+    if (contract) {
+      const { error: analysisError } = await supabase
+        .from('contract_analyses')
+        .insert({
+          contract_id: contract.id,
+          analysis_type: 'ai_rag',
+          confidence_score: analysis.confidence || 0.85,
+          total_violations: analysis.violations?.length || 0,
+          critical_violations: analysis.violations?.filter((v: any) => v.severity === 'CRITICAL').length || 0,
+          violations: analysis.violations || [],
+          alternatives: analysis.alternatives || [],
+          ai_model_used: process.env.OPENROUTER_MODEL,
+          compliance_status: analysis.violations?.length > 0 ? 'violations_found' : 'compliant'
+        });
+      
+      if (analysisError) {
+        console.error('Error saving analysis:', analysisError);
+      }
+      
+      // Update contract status
+      await supabase
+        .from('contracts')
+        .update({ status: 'analyzed' })
+        .eq('id', contract.id);
+    }
+    
+    console.log('✅ RAG-enhanced analysis complete');
+    
+    // Add RAG indicator to response
+    analysis.ragEnhanced = true;
+    analysis.contextSources = ['FAR Matrix', 'Auburn Policies', 'Historical Contracts'];
+    
+    return NextResponse.json(analysis);
+    
+  } catch (error) {
+    console.error('Error in RAG contract analysis:', error);
+    return NextResponse.json(
+      { error: 'Failed to analyze contract with RAG' },
+      { status: 500 }
+    );
+  }
+}

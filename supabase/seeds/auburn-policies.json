@@ -1,0 +1,88 @@
+{
+  "policies": [
+    {
+      "title": "Auburn University Indemnification Policy",
+      "type": "auburn_policy",
+      "content": "Auburn University, as a state entity, cannot agree to indemnify, defend, or hold harmless any party. This is prohibited by Alabama State law and the Alabama Constitution. Any contract clause requiring Auburn to indemnify another party must be removed or revised to be mutual or one-way in Auburn's favor. Acceptable alternative: 'Each party shall be responsible for its own acts and omissions.'"
+    },
+    {
+      "title": "Payment Terms Requirements",
+      "type": "auburn_policy",
+      "content": "Auburn University requires NET 30 payment terms at minimum. Shorter payment terms or penalties for late payment are not acceptable. Payment terms must align with state procurement processes. Any requirement for payment in less than 30 days must be rejected. Prepayment is generally not allowed except for specific approved categories like subscriptions or conference registrations."
+    },
+    {
+      "title": "Governing Law and Venue",
+      "type": "auburn_policy",
+      "content": "All contracts must specify Alabama law as the governing law and venue must be in Lee County, Alabama or a federal court in Alabama. Auburn University cannot agree to the laws of other states or to venue outside of Alabama. This is non-negotiable due to sovereign immunity considerations."
+    },
+    {
+      "title": "Insurance and Liability Limitations",
+      "type": "auburn_policy",
+      "content": "Auburn University is self-insured through the State of Alabama Board of Adjustment. Auburn cannot provide certificates of insurance from commercial insurers. Contracts requiring specific commercial insurance must be modified. Auburn can provide a letter of self-insurance if required."
+    },
+    {
+      "title": "Automatic Renewal Prohibition",
+      "type": "auburn_policy",
+      "content": "Auburn University cannot agree to automatic renewal or evergreen clauses. All contracts must have a definite term and require affirmative action to renew. Any automatic renewal language must be removed. Maximum initial term is typically 5 years with option to renew."
+    },
+    {
+      "title": "Intellectual Property Rights",
+      "type": "auburn_policy",
+      "content": "Work produced for Auburn University should be considered work-for-hire with Auburn retaining all intellectual property rights. Auburn cannot agree to assign its existing IP to vendors. Joint ownership may be acceptable in research collaborations with proper review."
+    },
+    {
+      "title": "Arbitration Restrictions",
+      "type": "auburn_policy",
+      "content": "As a state entity, Auburn University generally cannot agree to binding arbitration. Disputes must be resolved through Alabama courts. Non-binding mediation may be acceptable as a first step. Any mandatory arbitration clause must be removed or made optional."
+    }
+  ],
+  "far_matrix": [
+    {
+      "title": "FAR 52.204-21 Basic Safeguarding",
+      "type": "far_matrix",
+      "content": "Basic Safeguarding of Covered Contractor Information Systems requires contractors to apply basic safeguarding requirements to protect covered contractor information systems. Auburn must ensure: (1) Limit access to authorized users; (2) Limit access to authorized processes; (3) Verify and control/limit connections; (4) Control information posted publicly; (5) Identify and authenticate users; (6) Sanitize media; (7) Protect media during transport; (8) Scan for malicious code; (9) Update malicious code protection; (10) Perform system backups; (11) Control system use; (12) Identify unauthorized use; (13) Monitor communications at external boundaries; (14) Identify and manage information security risks; (15) Implement safeguards."
+    },
+    {
+      "title": "FAR 52.227-14 Rights in Data",
+      "type": "far_matrix",
+      "content": "Rights in Data - General clause governs the rights in data produced, furnished, or acquired under a contract. Auburn must ensure: (1) The Government has unlimited rights in data first produced in performance; (2) Contractor may retain copyright but grants Government license; (3) Protection of limited rights data and restricted computer software; (4) Contractor must obtain permission before including copyrighted data. Key requirement: Auburn needs unlimited rights to all deliverables."
+    },
+    {
+      "title": "FAR 52.222 Labor Standards",
+      "type": "far_matrix",
+      "content": "Equal Opportunity and Labor Standards provisions require: (1) Compliance with E.O. 11246 on non-discrimination; (2) Affirmative action for veterans and individuals with disabilities; (3) Compliance with Fair Labor Standards Act; (4) No use of forced or child labor; (5) Compliance with Service Contract Labor Standards where applicable. Auburn must flow down these requirements to all subcontractors."
+    },
+    {
+      "title": "FAR 52.203 Contractor Code of Business Ethics",
+      "type": "far_matrix",
+      "content": "Contractor Code of Business Ethics and Conduct requires: (1) Written code of business ethics; (2) Ethics training for employees; (3) Internal control system to detect violations; (4) Timely disclosure of violations to the Government; (5) Full cooperation with Government audits and investigations. Mandatory for contracts over $5.5M with performance period over 120 days."
+    }
+  ],
+  "approved_alternatives": [
+    {
+      "title": "Mutual Indemnification Alternative",
+      "type": "approved_alternative",
+      "content": "Instead of one-way indemnification: 'Each party shall be responsible for its own acts and omissions and the acts and omissions of its employees, agents, and subcontractors in connection with the performance of this Agreement.'"
+    },
+    {
+      "title": "Payment Terms Alternative",
+      "type": "approved_alternative",
+      "content": "Replace short payment terms with: 'Payment shall be due within thirty (30) days after Auburn University's receipt of an accurate and properly submitted invoice.'"
+    },
+    {
+      "title": "Venue Alternative",
+      "type": "approved_alternative",
+      "content": "Replace non-Alabama venue with: 'This Agreement shall be governed by the laws of the State of Alabama without regard to conflicts of law principles. Any disputes shall be resolved in the state or federal courts located in Alabama.'"
+    },
+    {
+      "title": "Insurance Alternative",
+      "type": "approved_alternative",
+      "content": "Replace commercial insurance requirements with: 'Auburn University is self-insured through the State of Alabama Board of Adjustment and will provide evidence of self-insurance upon request.'"
+    },
+    {
+      "title": "Renewal Alternative",
+      "type": "approved_alternative",
+      "content": "Replace automatic renewal with: 'This Agreement may be renewed for additional one-year terms upon mutual written agreement of the parties executed prior to expiration of the then-current term.'"
+    }
+  ]
+}

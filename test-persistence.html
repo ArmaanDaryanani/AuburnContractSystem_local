@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Contract Review Persistence</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+    button { padding: 10px 20px; margin: 10px; cursor: pointer; }
+    .status { padding: 15px; margin: 20px 0; border-radius: 5px; }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    .warning { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+    pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>Contract Review State Persistence Test</h1>
+  
+  <div id="status" class="status info">
+    Open this page, then navigate to the Contract Review page in the app, 
+    perform an analysis, then navigate away and back to see if state persists.
+  </div>
+  
+  <div>
+    <button onclick="checkState()">Check localStorage State</button>
+    <button onclick="simulateState()">Simulate Saved State</button>
+    <button onclick="clearState()">Clear State</button>
+  </div>
+  
+  <div id="output"></div>
+  
+  <script>
+    function checkState() {
+      const state = localStorage.getItem('contractReviewState');
+      const output = document.getElementById('output');
+      
+      if (state) {
+        const parsed = JSON.parse(state);
+        output.innerHTML = `
+          <div class="status success">
+            <h3>✅ State Found in localStorage</h3>
+            <p><strong>Has Analyzed:</strong> ${parsed.hasAnalyzed}</p>
+            <p><strong>Violations:</strong> ${parsed.violations?.length || 0}</p>
+            <p><strong>Messages:</strong> ${parsed.messages?.length || 0}</p>
+            <p><strong>Confidence:</strong> ${parsed.confidence || 0}%</p>
+            <p><strong>Risk Score:</strong> ${parsed.riskScore || 0}</p>
+            <p><strong>File Name:</strong> ${parsed.fileName || 'None'}</p>
+            <p><strong>Last Updated:</strong> ${parsed.lastUpdated || 'Unknown'}</p>
+            <p><strong>Contract Text Length:</strong> ${parsed.contractText?.length || 0} characters</p>
+          </div>
+          <h4>Full State Object:</h4>
+          <pre>${JSON.stringify(parsed, null, 2)}</pre>
+        `;
+      } else {
+        output.innerHTML = `
+          <div class="status warning">
+            <h3>⚠️ No State Found</h3>
+            <p>No contract review state found in localStorage.</p>
+            <p>Analyze a contract first, then check again.</p>
+          </div>
+        `;
+      }
+    }
+    
+    function simulateState() {
+      const mockState = {
+        contractText: "This is a test contract with terms and conditions...",
+        violations: [
+          {
+            id: "v1",
+            type: "Indemnification Clause",
+            severity: "HIGH",
+            description: "Auburn cannot indemnify vendors",
+            suggestion: "Remove indemnification requirement"
+          }
+        ],
+        confidence: 85,
+        riskScore: 7.5,
+        hasAnalyzed: true,
+        messages: [
+          {
+            id: "m1",
+            role: "assistant",
+            content: "I've analyzed your contract and found 1 compliance issue.",
+            timestamp: new Date().toISOString()
+          },
+          {
+            id: "m2",
+            role: "user",
+            content: "What's the main issue?",
+            timestamp: new Date().toISOString()
+          },
+          {
+            id: "m3",
+            role: "assistant",
+            content: "The main issue is an indemnification clause that Auburn cannot accept as a state entity.",
+            timestamp: new Date().toISOString()
+          }
+        ],
+        fileName: "test-contract.txt",
+        lastUpdated: new Date().toISOString()
+      };
+      
+      localStorage.setItem('contractReviewState', JSON.stringify(mockState));
+      
+      document.getElementById('output').innerHTML = `
+        <div class="status success">
+          <h3>✅ Mock State Saved</h3>
+          <p>A test state has been saved to localStorage.</p>
+          <p>Now navigate to the Contract Review page to see it loaded.</p>
+        </div>
+      `;
+    }
+    
+    function clearState() {
+      localStorage.removeItem('contractReviewState');
+      document.getElementById('output').innerHTML = `
+        <div class="status info">
+          <h3>🗑️ State Cleared</h3>
+          <p>Contract review state has been removed from localStorage.</p>
+        </div>
+      `;
+    }
+    
+    // Check on load
+    window.addEventListener('load', checkState);
+  </script>
+</body>
+</html>
