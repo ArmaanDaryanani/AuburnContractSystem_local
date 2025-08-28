@@ -16,15 +16,22 @@ export async function POST() {
 
     const supabase = createClient(supabaseUrl, supabaseKey);
     
-    // Check if data already exists
+    // ALWAYS check if data already exists - NEVER overwrite
     const { count: existingDocs } = await supabase
       .from('knowledge_documents')
       .select('*', { count: 'exact', head: true });
+    
+    const { count: existingEmbeddings } = await supabase
+      .from('document_embeddings')
+      .select('*', { count: 'exact', head: true });
       
+    // IMPORTANT: Never proceed if data exists
     if (existingDocs && existingDocs > 0) {
       return NextResponse.json({
-        message: 'Database already initialized',
-        documentCount: existingDocs
+        message: 'Database already has data - NOT overwriting',
+        documentCount: existingDocs,
+        embeddingCount: existingEmbeddings,
+        warning: 'Existing data preserved'
       });
     }
 

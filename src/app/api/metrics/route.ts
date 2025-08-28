@@ -80,72 +80,34 @@ export async function GET() {
       .from('knowledge_documents')
       .select('document_type, title');
     
-    // If there's an error or no data, return default values
-    if (docsError || embError || typesError || totalDocs === 0) {
-      console.log('[/api/metrics] Database empty or error, returning default data');
-      return NextResponse.json({
-        overview: {
-          totalDocuments: 4,
-          totalEmbeddings: 8348,
-          documentsIndexed: 4,
-          embeddingsPerDoc: 2087,
-          ragStatus: 'Operational',
-          lastUpdated: new Date().toISOString()
-        },
-        documentBreakdown: [
-          { 
-            type: 'FAR Regulations', 
-            count: 1,
-            chunks: 8203,
-            size: '12.7 MB'
-          },
-          { 
-            type: 'Auburn Policies', 
-            count: 1,
-            chunks: 114,
-            size: '450 KB'
-          },
-          { 
-            type: 'Contract Templates', 
-            count: 1,
-            chunks: 11,
-            size: '85 KB'
-          },
-          { 
-            type: 'Approved Alternatives', 
-            count: 1,
-            chunks: 20,
-            size: '120 KB'
-          }
-        ],
-        searchMetrics: {
-          avgSearchTime: '245ms',
-          semanticAccuracy: '92%',
-          embeddingModel: 'OpenAI text-embedding-3-small',
-          vectorDimensions: 1536,
-          totalVectors: 8348
-        },
-        systemHealth: {
-          ragStatus: 'Operational',
-          databaseStatus: 'Connected (No Data)',
-          openAIStatus: 'Active',
-          supabaseStatus: 'Connected',
-          lastSync: new Date().toISOString()
-        }
-      });
-    }
+    // Log any errors but continue to show real data
+    if (docsError) console.error('[/api/metrics] Error fetching documents:', docsError);
+    if (embError) console.error('[/api/metrics] Error fetching embeddings:', embError);
+    if (typesError) console.error('[/api/metrics] Error fetching document types:', typesError);
     
     const typeBreakdown = docTypes?.reduce((acc: any, doc) => {
       acc[doc.document_type] = (acc[doc.document_type] || 0) + 1;
       return acc;
     }, {}) || {};
     
-    // Calculate metrics
+    // Get actual chunk counts per document type
+    const chunkCounts: any = {};
+    if (docTypes) {
+      for (const doc of docTypes) {
+        const { count } = await supabase
+          .from('document_embeddings')
+          .select('*', { count: 'exact', head: true })
+          .eq('metadata->>document_type', doc.document_type);
+        chunkCounts[doc.document_type] = count || 0;
+      }
+    }
+    
+    // Calculate metrics with real data
     const metrics = {
       overview: {
         totalDocuments: totalDocs || 0,
         totalEmbeddings: totalEmbeddings || 0,
-        documentsIndexed: 4,
+        documentsIndexed: totalDocs || 0,
         embeddingsPerDoc: totalEmbeddings && totalDocs ? Math.round(totalEmbeddings / totalDocs) : 0,
         ragStatus: 'Operational',
         lastUpdated: new Date().toISOString()
@@ -153,27 +115,27 @@ export async function GET() {
       documentBreakdown: [
         { 
           type: 'FAR Regulations', 
-          count: typeBreakdown['far_matrix'] || 1,
-          chunks: 8203,
-          size: '12.7 MB'
+          count: typeBreakdown['far_matrix'] || 0,
+          chunks: chunkCounts['far_matrix'] || 0,
+          size: 'Variable'
         },
         { 
           type: 'Auburn Policies', 
-          count: typeBreakdown['auburn_policy'] || 1,
-          chunks: 114,
-          size: '450 KB'
+          count: typeBreakdown['auburn_policy'] || 0,
+          chunks: chunkCounts['auburn_policy'] || 0,
+          size: 'Variable'
         },
         { 
           type: 'Contract Templates', 
-          count: typeBreakdown['contract_template'] || 1,
-          chunks: 11,
-          size: '85 KB'
+          count: typeBreakdown['contract_template'] || 0,
+          chunks: chunkCounts['contract_template'] || 0,
+          size: 'Variable'
         },
         { 
           type: 'Approved Alternatives', 
-          count: typeBreakdown['approved_alternative'] || 1,
-          chunks: 20,
-          size: '120 KB'
+          count: typeBreakdown['approved_alternative'] || 0,
+          chunks: chunkCounts['approved_alternative'] || 0,
+          size: 'Variable'
         }
       ],
       searchMetrics: {

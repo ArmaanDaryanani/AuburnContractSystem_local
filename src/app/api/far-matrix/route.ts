@@ -93,56 +93,7 @@ export async function GET(request: Request) {
     
     if (error) {
       console.error('[/api/far-matrix] Database query error:', error);
-      // Return mock data on error
-      const mockFarRegulations = [
-        {
-          clause: 'FAR 52.228-7',
-          title: 'Insurance - Liability to Third Persons',
-          description: 'Contractor shall maintain insurance coverage',
-          auburnImpact: 'Auburn requires specific insurance limits',
-          status: 'active'
-        },
-        {
-          clause: 'FAR 28.106',
-          title: 'Indemnification',
-          description: 'Government indemnification restrictions',
-          auburnImpact: 'Auburn cannot provide indemnification as state entity',
-          status: 'critical'
-        },
-        {
-          clause: 'FAR 31.205-33',
-          title: 'Professional and Consultant Service Costs',
-          description: 'Allowability of consultant costs',
-          auburnImpact: 'Must follow Auburn procurement policies',
-          status: 'active'
-        },
-        {
-          clause: 'FAR 52.227-14',
-          title: 'Rights in Data - General',
-          description: 'Government rights to contractor data',
-          auburnImpact: 'Faculty retain IP rights per Auburn policy',
-          status: 'critical'
-        },
-        {
-          clause: 'FAR 52.232-1',
-          title: 'Payments',
-          description: 'Progress payment requirements',
-          auburnImpact: 'Auburn requires progress payments, not milestone',
-          status: 'active'
-        }
-      ];
-      
-      return NextResponse.json({
-        regulations: mockFarRegulations,
-        totalCount: mockFarRegulations.length,
-        categories: {
-          'Indemnification': 1,
-          'Insurance': 1,
-          'Intellectual Property': 1,
-          'Payment Terms': 1,
-          'Professional Services': 1
-        }
-      });
+      // Continue with empty data instead of throwing
     }
     
     // Parse FAR regulations from chunks
