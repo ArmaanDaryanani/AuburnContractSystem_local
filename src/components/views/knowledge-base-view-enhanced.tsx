@@ -65,7 +65,6 @@ export default function KnowledgeBaseViewEnhanced() {
   const [streamingContent, setStreamingContent] = useState("");
   
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
@@ -89,10 +88,7 @@ export default function KnowledgeBaseViewEnhanced() {
     }
   }, [messages]);
 
-  // Auto-scroll to bottom when new messages or streaming content
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, streamingContent]);
+  // Removed auto-scroll to prevent page jumping
 
   const fetchKnowledgeBase = async () => {
     try {
@@ -614,8 +610,6 @@ export default function KnowledgeBaseViewEnhanced() {
                       </div>
                     )}
                     
-                    {/* Scroll anchor */}
-                    <div ref={messagesEndRef} />
                   </div>
                 </div>
                 
@@ -841,8 +835,6 @@ export default function KnowledgeBaseViewEnhanced() {
                       </div>
                     )}
                     
-                    {/* Scroll anchor */}
-                    <div ref={messagesEndRef} />
                   </div>
                 </div>
                 
@@ -924,8 +916,6 @@ export default function KnowledgeBaseViewEnhanced() {
                       </div>
                     )}
                     
-                    {/* Scroll anchor */}
-                    <div ref={messagesEndRef} />
                   </div>
                 </div>
               </div>
@@ -1069,8 +1059,6 @@ export default function KnowledgeBaseViewEnhanced() {
                     </div>
                   )}
                   
-                  {/* Scroll anchor */}
-                  <div ref={messagesEndRef} />
                 </div>
               </div>
               
