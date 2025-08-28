@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { extractText, getDocumentProxy } from 'unpdf';
 
-export const runtime = 'nodejs';
+export const runtime = 'edge'; // Use edge runtime for better performance
 export const maxDuration = 30; // 30 seconds timeout
 
 export async function POST(request: NextRequest) {
@@ -21,18 +22,18 @@ export async function POST(request: NextRequest) {
     // Check if it's a PDF
     if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
       try {
-        // Dynamically import pdf-parse to avoid build issues
-        const pdf = (await import('pdf-parse')).default;
-        
-        // Convert file to buffer
+        // Convert file to Uint8Array for unpdf
         const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
+        const uint8Array = new Uint8Array(bytes);
         
-        // Parse PDF
-        const data = await pdf(buffer);
+        // Load the PDF file into a PDF.js document
+        const pdf = await getDocumentProxy(uint8Array);
+        
+        // Extract text from all pages
+        const { totalPages, text } = await extractText(pdf, { mergePages: true });
         
         // Clean up the text - fix spacing issues
-        let cleanText = data.text;
+        let cleanText = text || '';
         
         // Fix common PDF extraction issues more aggressively
         cleanText = cleanText
@@ -50,8 +51,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           text: cleanText,
           type: 'pdf',
-          pages: data.numpages,
-          info: data.info
+          pages: totalPages,
+          info: { pages: totalPages }
         });
       } catch (pdfError: any) {
         console.error('PDF parsing error:', pdfError);

@@ -522,8 +522,8 @@ export default function KnowledgeBaseViewEnhanced() {
             // Split View: Chat + Document Upload
             <div className="grid grid-cols-2 h-full">
               {/* Left: Chat */}
-              <div className="border-r border-gray-200 flex flex-col">
-                <div className="p-4 border-b border-gray-100">
+              <div className="border-r border-gray-200 flex flex-col h-full">
+                <div className="p-4 border-b border-gray-100 flex-shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-gray-600" />
@@ -542,7 +542,7 @@ export default function KnowledgeBaseViewEnhanced() {
                   </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4 min-h-0">
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <div
@@ -619,7 +619,7 @@ export default function KnowledgeBaseViewEnhanced() {
                   </div>
                 </div>
                 
-                <div className="p-4 border-t border-gray-100">
+                <div className="p-4 border-t border-gray-100 flex-shrink-0">
                   <div className="flex gap-2">
                     <Textarea
                       value={chatInput}
@@ -750,8 +750,8 @@ export default function KnowledgeBaseViewEnhanced() {
             // Split View: Chat + Document Viewer
             <div className="grid grid-cols-2 h-full">
               {/* Left: Chat */}
-              <div className="border-r border-gray-200 flex flex-col">
-                <div className="p-4 border-b border-gray-100">
+              <div className="border-r border-gray-200 flex flex-col h-full">
+                <div className="p-4 border-b border-gray-100 flex-shrink-0">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <MessageSquare className="h-4 w-4 text-gray-600" />
@@ -767,7 +767,7 @@ export default function KnowledgeBaseViewEnhanced() {
                   </div>
                 </div>
                 
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-4 min-h-0">
                   <div className="space-y-4">
                     {messages.map((message) => (
                       <div
@@ -844,7 +844,7 @@ export default function KnowledgeBaseViewEnhanced() {
                   </div>
                 </div>
                 
-                <div className="p-4 border-t border-gray-100">
+                <div className="p-4 border-t border-gray-100 flex-shrink-0">
                   <div className="flex gap-2">
                     <Textarea
                       value={chatInput}
