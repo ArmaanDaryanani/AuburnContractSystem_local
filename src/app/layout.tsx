@@ -3,6 +3,7 @@ import { Bitter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ContractReviewProvider } from "@/contexts/ContractReviewContext";
+import { Analytics } from "@vercel/analytics/next";
 
 const bitter = Bitter({ 
   subsets: ["latin"],
@@ -26,6 +27,7 @@ export default function RootLayout({
           {children}
         </ContractReviewProvider>
         <Toaster />
+        <Analytics />
       </body>
     </html>
   );
