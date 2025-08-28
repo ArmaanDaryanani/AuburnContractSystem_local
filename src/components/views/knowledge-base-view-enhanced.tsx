@@ -663,15 +663,15 @@ export default function KnowledgeBaseViewEnhanced() {
                       </div>
                     </div>
                     
-                    <div className="flex-1 overflow-y-auto p-4">
+                    <div className="flex-1 overflow-y-auto p-4 max-h-[600px]">
                       {pdfUrl && uploadedFile?.type === 'application/pdf' ? (
-                        <div className="flex flex-col h-full">
-                          <div className="flex-1 bg-gray-100 rounded-lg p-2" style={{ minHeight: '600px' }}>
+                        <div className="flex flex-col h-full max-h-[550px]">
+                          <div className="flex-1 bg-gray-100 rounded-lg p-2 overflow-hidden">
                             <object
                               data={pdfUrl}
                               type="application/pdf"
                               className="w-full h-full rounded"
-                              style={{ minHeight: '580px' }}
+                              style={{ height: '500px' }}
                             >
                               <div className="flex flex-col items-center justify-center h-full p-8 text-gray-600">
                                 <FileText className="h-12 w-12 mb-4 text-gray-400" />

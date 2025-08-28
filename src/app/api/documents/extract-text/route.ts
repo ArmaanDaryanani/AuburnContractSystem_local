@@ -11,12 +11,43 @@ export async function POST(request: NextRequest) {
 
     // Check if it's a PDF
     if (file.type === 'application/pdf' || file.name.endsWith('.pdf')) {
-      // For now, return a message that PDF will be processed
-      // In production, you'd use a library like pdf-parse or send to an API
-      return NextResponse.json({ 
-        text: `PDF Document: ${file.name}\n\nContent extraction in progress. The system will analyze this PDF when you ask questions about it.`,
-        type: 'pdf'
-      });
+      try {
+        // Dynamically import pdf-parse to avoid build issues
+        const pdf = (await import('pdf-parse')).default;
+        
+        // Convert file to buffer
+        const bytes = await file.arrayBuffer();
+        const buffer = Buffer.from(bytes);
+        
+        // Parse PDF
+        const data = await pdf(buffer);
+        
+        // Clean up the text - fix spacing issues
+        let cleanText = data.text;
+        
+        // Fix common PDF extraction issues
+        cleanText = cleanText
+          .replace(/([a-z])([A-Z])/g, '$1 $2') // Add space between camelCase
+          .replace(/(\w)([.!?])([A-Z])/g, '$1$2 $3') // Add space after sentence endings
+          .replace(/(\d)([A-Za-z])/g, '$1 $2') // Add space between numbers and letters
+          .replace(/([A-Za-z])(\d)/g, '$1 $2') // Add space between letters and numbers
+          .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
+          .trim();
+        
+        return NextResponse.json({ 
+          text: cleanText,
+          type: 'pdf',
+          pages: data.numpages,
+          info: data.info
+        });
+      } catch (pdfError) {
+        console.error('PDF parsing error:', pdfError);
+        // Fallback if PDF parsing fails
+        return NextResponse.json({ 
+          text: `PDF Document: ${file.name}\n\nUnable to extract text. The file may be scanned or protected.`,
+          type: 'pdf'
+        });
+      }
     }
 
     // For text files, read directly
