@@ -335,31 +335,31 @@ export default function ContractReviewView() {
   };
 
   const buildContextPrompt = () => {
-    let context = `You are an Auburn University contract compliance expert. CRITICAL: You MUST respond DIRECTLY to the user's specific question. Do NOT provide generic contract advice.
+    // Reduce context size to avoid token limits
+    let context = `You are an Auburn University contract compliance expert. Answer the user's question directly.
 
-Contract being reviewed:
-${contractText.substring(0, 2500)}${contractText.length > 2500 ? '...' : ''}
+Contract summary (${Math.round(contractText.length/1000)}k chars total):
+${contractText.substring(0, 1000)}${contractText.length > 1000 ? '...' : ''}
 
 `;
     
     if (violations.length > 0) {
-      context += `Detected violations in this contract:\n`;
-      violations.forEach((v, i) => {
-        context += `${i + 1}. [${v.severity || 'HIGH'}] ${v.type}: ${v.description}\n`;
+      // Only include top 5 violations to save tokens
+      context += `Key violations (showing ${Math.min(5, violations.length)} of ${violations.length}):\n`;
+      violations.slice(0, 5).forEach((v, i) => {
+        const desc = v.description.length > 80 ? v.description.substring(0, 80) + '...' : v.description;
+        context += `${i + 1}. [${v.severity || 'HIGH'}] ${v.type}: ${desc}\n`;
       });
       context += `\n`;
     }
 
-    context += `CRITICAL INSTRUCTIONS:
-1. DIRECTLY answer the user's question - do not give generic advice
-2. If user says "test" or similar, acknowledge it's a test and explain what you can help with
-3. Reference specific parts of THIS contract when relevant
-4. Focus on Auburn University policies and FAR compliance
-5. Be concise and specific
-6. If asked about a violation, explain THAT specific violation`;
+    context += `Instructions: Answer directly and concisely. Focus on Auburn policies and FAR compliance.`;
     
-    console.log('📝 [BuildContext] Context prompt length:', context.length);
-    console.log('📋 [BuildContext] Violations included:', violations.length);
+    console.log('📝 [BuildContext] Optimized context:', {
+      totalLength: context.length,
+      contractPreview: 1000,
+      violationsIncluded: Math.min(5, violations.length)
+    });
     
     return context;
   };
@@ -392,9 +392,9 @@ ${contractText.substring(0, 2500)}${contractText.length > 2500 ? '...' : ''}
     try {
       abortControllerRef.current = new AbortController();
       
-      // Build message history with 10-message context window
+      // Build message history with smaller context window to avoid token limits
       const conversationHistory = messages.filter(m => m.id !== "welcome");
-      const recentMessages = conversationHistory.slice(-10); // Keep last 10 messages for context
+      const recentMessages = conversationHistory.slice(-4); // Only keep last 4 messages to avoid token limits
       
       console.log('📤 [ContractReviewView] Calling chat API...');
       
