@@ -57,17 +57,30 @@ export function ContractChat({ contractText, violations = [], isOpen, onClose }:
   }, [messages, streamingContent]);
 
   const buildContextPrompt = () => {
-    let context = `You are an expert contract analyst for Auburn University. You are reviewing the following contract:\n\n${contractText.substring(0, 3000)}...\n\n`;
-    
-    if (violations.length > 0) {
-      context += `The following violations were detected:\n`;
-      violations.forEach((v, i) => {
-        context += `${i + 1}. ${v.type}: ${v.description}\n`;
-      });
-      context += `\n`;
-    }
+    // Include the FULL contract text for comprehensive Q&A
+    let context = `You are an expert contract analyst for Auburn University. You have access to the COMPLETE contract being reviewed.
 
-    context += `Please provide helpful, specific answers about this contract, FAR compliance, Auburn policies, and suggested improvements. Be concise but thorough.`;
+FULL CONTRACT TEXT:
+${contractText}
+
+${violations.length > 0 ? `
+DETECTED VIOLATIONS:
+${violations.map((v, i) => 
+  `${i + 1}. [${v.severity}] ${v.type}: ${v.description}
+   Location: ${v.location || 'Not specified'}
+   Suggestion: ${v.suggestion || 'Review required'}`
+).join('\n')}
+` : 'No violations were detected in this contract.'}
+
+INSTRUCTIONS:
+- Answer questions about ANY part of this contract (you have the full text above)
+- Reference specific clauses, sections, or language from the contract
+- Provide Auburn University policy compliance guidance
+- Suggest alternative language when appropriate
+- Cite FAR requirements when relevant
+- Be specific and quote the contract directly when answering questions
+
+Please provide helpful, specific answers about this contract. When asked about specific clauses or terms, quote them directly from the contract text above.`;
     
     return context;
   };

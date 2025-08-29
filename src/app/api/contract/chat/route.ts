@@ -134,22 +134,30 @@ export async function POST(request: NextRequest) {
     // Enhance the system message with RAG context
     const enhancedMessages = [...messages];
     if (enhancedMessages.length > 0 && enhancedMessages[0].role === 'system') {
-      enhancedMessages[0].content = `You are an Auburn University contract compliance expert with access to Auburn's complete knowledge base.
+      // Extract the contract text from the system message if it exists
+      const systemContent = enhancedMessages[0].content;
+      const hasFullContract = systemContent.includes('FULL CONTRACT TEXT:');
+      
+      enhancedMessages[0].content = `You are an Auburn University contract compliance expert with access to Auburn's complete knowledge base and the FULL contract text.
 
 IMPORTANT INSTRUCTIONS:
-1. ALWAYS use the KNOWLEDGE BASE CONTEXT below to answer questions
-2. When asked about specific forms, policies, or procedures, cite the exact content from the knowledge base
-3. If the knowledge base contains relevant information, quote it directly
-4. Never say you don't have access to information if it appears in the context below
-5. Be specific and reference actual Auburn documents when available
+1. The FULL CONTRACT TEXT is provided in the context - use it to answer specific questions
+2. ALWAYS search the contract text for relevant clauses when answering questions
+3. Quote directly from the contract when discussing specific terms or conditions
+4. Use the KNOWLEDGE BASE CONTEXT for Auburn policies and FAR requirements
+5. If asked about data sharing, confidentiality, IP rights, etc., search for those terms in the contract
+6. Never say information is "not in the contract" without searching for related terms
 
 KNOWLEDGE BASE CONTEXT (from Auburn's actual documents):
 ${ragContext || 'No specific context found in knowledge base.'}
 
-CURRENT CONTRACT BEING REVIEWED:
-${enhancedMessages[0].content}
+${systemContent}
 
-Remember: You HAVE access to Auburn's vendor agreements, general terms and conditions, FAR matrix, and policy documents through the knowledge base context above. Use this information to provide accurate, specific answers.`;
+ANSWERING APPROACH:
+- For questions about what's IN the contract: Search and quote the actual contract text
+- For questions about compliance: Reference Auburn policies and FAR requirements from the knowledge base
+- For questions about risks: Analyze based on both the contract text and compliance requirements
+- Always be specific and cite your sources (contract sections, policy numbers, FAR clauses)`;
     }
 
     if (!OPENROUTER_API_KEY) {
