@@ -33,6 +33,8 @@ import { ContractAnalyzer, type ViolationDetail } from "@/lib/contract-analysis"
 import { ContractDocumentInline } from "@/components/contract-document-inline";
 import { cn } from "@/lib/utils";
 import { memoryStore } from "@/lib/memory-store";
+import { extractTextFromFile } from "@/lib/document-extractor";
+import { detectDocumentType, DocumentType } from "@/lib/document-utils";
 
 interface Message {
   id: string;
@@ -208,30 +210,100 @@ export default function ContractReviewView() {
     }
   }, []);
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
       setFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setContractText(e.target?.result as string);
-      };
-      reader.readAsText(file);
+      
+      // Show loading toast
+      toast({
+        title: "Processing document...",
+        description: `Extracting text from ${file.name}`,
+      });
+      
+      try {
+        const extracted = await extractTextFromFile(file);
+        
+        if (extracted.error) {
+          toast({
+            title: "Extraction Warning",
+            description: extracted.error,
+            variant: "default",
+          });
+        }
+        
+        setContractText(extracted.text);
+        
+        // Log document type
+        const docInfo = detectDocumentType(file);
+        logger.info('ContractReviewView', 'Document loaded', {
+          type: docInfo.type,
+          size: file.size,
+          pages: extracted.pages
+        });
+        
+        toast({
+          title: "Document loaded",
+          description: `Successfully extracted text from ${file.name}`,
+        });
+      } catch (error: any) {
+        console.error('Error processing file:', error);
+        toast({
+          title: "Error loading document",
+          description: error.message || "Failed to extract text from document",
+          variant: "destructive",
+        });
+      }
     }
   };
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
     e.preventDefault();
     const file = e.dataTransfer.files[0];
     if (file) {
       setFile(file);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setContractText(event.target?.result as string);
-      };
-      reader.readAsText(file);
+      
+      // Show loading toast
+      toast({
+        title: "Processing document...",
+        description: `Extracting text from ${file.name}`,
+      });
+      
+      try {
+        const extracted = await extractTextFromFile(file);
+        
+        if (extracted.error) {
+          toast({
+            title: "Extraction Warning",
+            description: extracted.error,
+            variant: "default",
+          });
+        }
+        
+        setContractText(extracted.text);
+        
+        // Log document type  
+        const docInfo = detectDocumentType(file);
+        logger.info('ContractReviewView', 'Document dropped', {
+          type: docInfo.type,
+          size: file.size,
+          pages: extracted.pages
+        });
+        
+        toast({
+          title: "Document loaded",
+          description: `Successfully extracted text from ${file.name}`,
+        });
+      } catch (error: any) {
+        console.error('Error processing dropped file:', error);
+        toast({
+          title: "Error loading document",
+          description: error.message || "Failed to extract text from document",
+          variant: "destructive",
+        });
+      }
     }
-  }, []);
+  }, [toast]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
