@@ -2,9 +2,10 @@
 
 import { useState, lazy, Suspense } from "react";
 import { NavigationSPA, type ViewType } from "@/components/navigation-spa";
-import ContractReviewView from "@/components/views/contract-review-view";
+import ContractReviewViewMulti from "@/components/views/contract-review-view-multi";
 import { AuthWrapper } from "@/components/auth/auth-wrapper";
 import { Loader2 } from "lucide-react";
+import { ContractReviewProvider } from "@/contexts/ContractReviewContext";
 
 // Lazy load views for better performance
 const BatchAuditView = lazy(() => import("@/components/views/batch-audit-view"));
@@ -30,7 +31,7 @@ export default function HomePage() {
   const renderView = () => {
     switch (currentView) {
       case "contract-review":
-        return <ContractReviewView />;
+        return <ContractReviewViewMulti />;
       case "batch-audit":
         return (
           <Suspense fallback={<LoadingView />}>
@@ -62,19 +63,21 @@ export default function HomePage() {
           </Suspense>
         );
       default:
-        return <ContractReviewView />;
+        return <ContractReviewViewMulti />;
     }
   };
 
   return (
     <AuthWrapper>
-      <div className="flex h-screen bg-white">
-        <NavigationSPA currentView={currentView} onViewChange={setCurrentView} />
-        
-        <div className="flex-1 overflow-y-auto">
-          {renderView()}
+      <ContractReviewProvider>
+        <div className="flex h-screen bg-white">
+          <NavigationSPA currentView={currentView} onViewChange={setCurrentView} />
+          
+          <div className="flex-1 overflow-y-auto">
+            {renderView()}
+          </div>
         </div>
-      </div>
+      </ContractReviewProvider>
     </AuthWrapper>
   );
 }
