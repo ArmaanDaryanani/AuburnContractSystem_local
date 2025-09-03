@@ -31,10 +31,24 @@ import {
 } from "lucide-react";
 import { ContractAnalyzer, type ViolationDetail } from "@/lib/contract-analysis";
 import { ContractDocumentInline } from "@/components/contract-document-inline";
+import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 import { memoryStore } from "@/lib/memory-store";
 import { extractTextFromFile } from "@/lib/document-extractor";
 import { detectDocumentType, DocumentType } from "@/lib/document-utils";
+
+// Dynamically import PDF viewer to avoid SSR issues
+const ContractDocumentInlinePDF = dynamic(
+  () => import("@/components/contract-document-inline-pdf").then(mod => mod.ContractDocumentInlinePDF),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+);
 
 interface Message {
   id: string;
@@ -1015,12 +1029,21 @@ ${contractText.substring(0, 1000)}${contractText.length > 1000 ? '...' : ''}
           
           {/* Inline Document Viewer - appears after analysis */}
           {hasAnalyzed && contractText && (
-            <ContractDocumentInline
-              contractText={contractText}
-              violations={violations}
-              selectedViolationId={selectedViolationId}
-              onViolationClick={handleViolationSelect}
-            />
+            file && detectDocumentType(file).type === DocumentType.PDF ? (
+              <ContractDocumentInlinePDF
+                file={file}
+                violations={violations}
+                selectedViolationId={selectedViolationId}
+                onViolationClick={handleViolationSelect}
+              />
+            ) : (
+              <ContractDocumentInline
+                contractText={contractText}
+                violations={violations}
+                selectedViolationId={selectedViolationId}
+                onViolationClick={handleViolationSelect}
+              />
+            )
           )}
         </div>
 
