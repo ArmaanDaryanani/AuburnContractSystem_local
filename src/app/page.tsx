@@ -3,6 +3,7 @@
 import { useState, lazy, Suspense } from "react";
 import { NavigationSPA, type ViewType } from "@/components/navigation-spa";
 import ContractReviewView from "@/components/views/contract-review-view";
+import ContractReviewSimplified from "@/components/contract-review-simplified";
 import { AuthWrapper } from "@/components/auth/auth-wrapper";
 import { Loader2 } from "lucide-react";
 
@@ -30,7 +31,7 @@ export default function HomePage() {
   const renderView = () => {
     switch (currentView) {
       case "contract-review":
-        return <ContractReviewView />;
+        return <ContractReviewSimplified />;
       case "batch-audit":
         return (
           <Suspense fallback={<LoadingView />}>
@@ -62,7 +63,7 @@ export default function HomePage() {
           </Suspense>
         );
       default:
-        return <ContractReviewView />;
+        return <ContractReviewSimplified />;
     }
   };
 

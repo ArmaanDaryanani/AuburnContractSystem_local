@@ -1,0 +1,457 @@
+"use client";
+
+import { useState, useRef, useCallback, useEffect } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Upload,
+  FileText,
+  Loader2,
+  Sparkles,
+  AlertCircle,
+  CheckCircle,
+  AlertTriangle,
+} from "lucide-react";
+import { ContractAnalyzer, type ViolationDetail } from "@/lib/contract-analysis";
+import { DocumentViewer } from "@/components/document-viewer";
+import { extractTextFromFile } from "@/lib/document-extractor";
+import { detectDocumentType } from "@/lib/document-utils";
+
+export default function ContractReviewSimplified() {
+  const [file, setFile] = useState<File | null>(null);
+  const [contractText, setContractText] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [violations, setViolations] = useState<ViolationDetail[]>([]);
+  const [confidence, setConfidence] = useState(0);
+  const [riskScore, setRiskScore] = useState(0);
+  const [hasAnalyzed, setHasAnalyzed] = useState(false);
+  const [selectedViolationId, setSelectedViolationId] = useState<string | null>(null);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+  const contractAnalyzer = useRef(new ContractAnalyzer());
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setFile(file);
+      setHasAnalyzed(false);
+      setViolations([]);
+      
+      toast({
+        title: "Processing document...",
+        description: `Extracting text from ${file.name}`,
+      });
+      
+      try {
+        const extracted = await extractTextFromFile(file);
+        
+        if (extracted.error) {
+          toast({
+            title: "Extraction Warning",
+            description: extracted.error,
+            variant: "default",
+          });
+        }
+        
+        setContractText(extracted.text);
+        
+        toast({
+          title: "Document loaded",
+          description: `Ready to analyze ${file.name}`,
+        });
+      } catch (error: any) {
+        console.error('Error processing file:', error);
+        toast({
+          title: "Error loading document",
+          description: error.message || "Failed to extract text from document",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
+  const handleDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      setFile(file);
+      setHasAnalyzed(false);
+      setViolations([]);
+      
+      toast({
+        title: "Processing document...",
+        description: `Extracting text from ${file.name}`,
+      });
+      
+      try {
+        const extracted = await extractTextFromFile(file);
+        
+        if (extracted.error) {
+          toast({
+            title: "Extraction Warning",
+            description: extracted.error,
+            variant: "default",
+          });
+        }
+        
+        setContractText(extracted.text);
+        
+        toast({
+          title: "Document loaded",
+          description: `Ready to analyze ${file.name}`,
+        });
+      } catch (error: any) {
+        console.error('Error processing dropped file:', error);
+        toast({
+          title: "Error loading document",
+          description: error.message || "Failed to extract text from document",
+          variant: "destructive",
+        });
+      }
+    }
+  }, [toast]);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const analyzeContract = async () => {
+    if (!contractText) {
+      toast({
+        title: "No document loaded",
+        description: "Please upload a contract document first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setAnalysisProgress(0);
+    setViolations([]);
+    setHasAnalyzed(false);
+
+    // Simulate progress
+    const progressInterval = setInterval(() => {
+      setAnalysisProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 200);
+
+    try {
+      // Try AI analysis first
+      const response = await fetch("/api/contract/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: contractText,
+          fileName: file?.name || "contract.txt",
+          useAI: true
+        }),
+      });
+
+      let result;
+      if (response.ok) {
+        result = await response.json();
+      } else {
+        // Fallback to local analysis
+        const analysis = contractAnalyzer.current.analyzeContract(contractText);
+        result = {
+          violations: analysis.violations,
+          confidence: analysis.confidence,
+          riskScore: analysis.riskScore
+        };
+      }
+      
+      clearInterval(progressInterval);
+      setAnalysisProgress(100);
+      
+      setViolations(result.violations || []);
+      setConfidence(result.confidence || 85);
+      setRiskScore(result.riskScore || 0);
+      setHasAnalyzed(true);
+      
+      toast({
+        title: "Analysis Complete",
+        description: `Found ${result.violations?.length || 0} compliance issues`,
+      });
+      
+    } catch (error) {
+      console.error('Analysis error:', error);
+      
+      // Fallback to TF-IDF analysis
+      const analysis = contractAnalyzer.current.analyzeContract(contractText);
+      
+      clearInterval(progressInterval);
+      setAnalysisProgress(100);
+      
+      setViolations(analysis.violations);
+      setConfidence(analysis.confidence);
+      setRiskScore(analysis.riskScore);
+      setHasAnalyzed(true);
+      
+      toast({
+        title: "Analysis Complete (Offline)",
+        description: `Found ${analysis.violations.length} compliance issues`,
+        variant: "default",
+      });
+    } finally {
+      setIsAnalyzing(false);
+      setTimeout(() => setAnalysisProgress(0), 1000);
+    }
+  };
+
+  const handleViolationClick = (violationId: string) => {
+    setSelectedViolationId(violationId);
+    // Scroll to violation details if needed
+    const element = document.getElementById(`violation-${violationId}`);
+    element?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Contract Review System
+          </h1>
+          <p className="text-gray-600">
+            Auburn University Office of Sponsored Programs
+          </p>
+        </div>
+
+        {/* Stats Bar */}
+        {hasAnalyzed && (
+          <div className="grid grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Violations</p>
+                    <p className="text-2xl font-bold">{violations.length}</p>
+                  </div>
+                  <AlertCircle className="h-8 w-8 text-orange-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Risk Score</p>
+                    <p className="text-2xl font-bold">{riskScore.toFixed(1)}/10</p>
+                  </div>
+                  <AlertTriangle className="h-8 w-8 text-yellow-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Confidence</p>
+                    <p className="text-2xl font-bold">{confidence.toFixed(0)}%</p>
+                  </div>
+                  <CheckCircle className="h-8 w-8 text-green-500" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-600">Status</p>
+                    <p className="text-lg font-bold text-green-600">Complete</p>
+                  </div>
+                  <Sparkles className="h-8 w-8 text-blue-500" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        <div className="grid lg:grid-cols-2 gap-6">
+          {/* Left: Upload and Document Display */}
+          <div className="space-y-4">
+            {!file ? (
+              <Card>
+                <CardContent className="p-8">
+                  <div
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 transition-colors cursor-pointer"
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-lg font-medium text-gray-700 mb-2">
+                      Upload Contract Document
+                    </p>
+                    <p className="text-sm text-gray-500">
+                      Drop your PDF or DOCX file here, or click to browse
+                    </p>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".pdf,.docx,.doc,.txt"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </div>
+
+                  <Button
+                    onClick={analyzeContract}
+                    disabled={!contractText || isAnalyzing}
+                    className="w-full mt-4"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        Analyze Contract
+                      </>
+                    )}
+                  </Button>
+
+                  {isAnalyzing && (
+                    <div className="mt-4">
+                      <Progress value={analysisProgress} className="h-2" />
+                      <p className="text-xs text-gray-500 mt-2 text-center">
+                        Analyzing contract... {analysisProgress}%
+                      </p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            ) : (
+              <DocumentViewer
+                file={file}
+                violations={violations}
+                selectedViolationId={selectedViolationId}
+                onViolationClick={handleViolationClick}
+              />
+            )}
+          </div>
+
+          {/* Right: Violations List */}
+          <div>
+            <Card className="h-full">
+              <CardContent className="p-6">
+                {!hasAnalyzed ? (
+                  <div className="flex flex-col items-center justify-center h-[400px] text-center">
+                    <FileText className="h-12 w-12 text-gray-400 mb-4" />
+                    <p className="text-gray-600 mb-2">No analysis yet</p>
+                    <p className="text-sm text-gray-500">
+                      Upload a contract and click "Analyze Contract" to check for compliance issues
+                    </p>
+                  </div>
+                ) : violations.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[400px] text-center">
+                    <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
+                    <p className="text-lg font-medium text-gray-900 mb-2">
+                      Contract Approved!
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      No compliance issues found. This contract meets all requirements.
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <h3 className="text-lg font-medium mb-4">
+                      Compliance Issues ({violations.length})
+                    </h3>
+                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                      {violations.map((violation, index) => (
+                        <div
+                          key={violation.id}
+                          id={`violation-${violation.id}`}
+                          className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                            selectedViolationId === violation.id
+                              ? 'border-blue-500 bg-blue-50'
+                              : 'border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => handleViolationClick(violation.id)}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-medium">
+                                {index + 1}. {violation.type}
+                              </span>
+                              <Badge
+                                variant={
+                                  violation.severity === 'CRITICAL' ? 'destructive' :
+                                  violation.severity === 'HIGH' ? 'secondary' :
+                                  'outline'
+                                }
+                                className="text-xs"
+                              >
+                                {violation.severity}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-600 mb-2">
+                            {violation.description}
+                          </p>
+                          <div className="bg-green-50 border border-green-200 rounded p-2">
+                            <p className="text-xs text-green-800">
+                              <strong>Recommendation:</strong> {violation.suggestion}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {file && !hasAnalyzed && (
+              <div className="mt-4 flex justify-between items-center">
+                <Button
+                  onClick={analyzeContract}
+                  disabled={!contractText || isAnalyzing}
+                  className="flex-1 mr-2"
+                >
+                  {isAnalyzing ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      Analyze Contract
+                    </>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => {
+                    setFile(null);
+                    setContractText("");
+                    setViolations([]);
+                    setHasAnalyzed(false);
+                  }}
+                  variant="outline"
+                >
+                  Clear
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -42,6 +42,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "diff": "^8.0.2",
+    "docx-preview": "^0.3.6",
     "dotenv": "^17.2.1",
     "lucide-react": "^0.542.0",
     "mammoth": "^1.10.0",
