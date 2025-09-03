@@ -52,22 +52,10 @@ async function extractFromDOCX(file: File) {
     // Convert file to ArrayBuffer for mammoth
     const arrayBuffer = await file.arrayBuffer();
     
-    // Create options for better extraction
-    const options = {
-      arrayBuffer: arrayBuffer,
-      convertImage: mammoth.images.imgElement(function(image: any) {
-        return image.read("base64").then(function(imageBuffer: any) {
-          return {
-            src: "data:" + image.contentType + ";base64," + imageBuffer
-          };
-        });
-      })
-    };
-    
     // Extract both raw text and HTML
     const [textResult, htmlResult] = await Promise.all([
       mammoth.extractRawText({ arrayBuffer }),
-      mammoth.convertToHtml(options)
+      mammoth.convertToHtml({ arrayBuffer })
     ]);
     
     // Log any conversion messages

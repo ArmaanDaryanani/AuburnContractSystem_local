@@ -55,7 +55,7 @@ export function DOCXViewerImproved({
           // Fallback to plain text with basic formatting
           const formattedText = result.text
             .split('\n\n')
-            .map(paragraph => `<p>${paragraph}</p>`)
+            .map((paragraph: string) => `<p>${paragraph}</p>`)
             .join('');
           setDocumentContent(formattedText);
         } else {
@@ -74,7 +74,7 @@ export function DOCXViewerImproved({
           if (text) {
             const basicHtml = text
               .split('\n\n')
-              .map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+              .map((p: string) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
               .join('');
             setDocumentContent(basicHtml);
             setError(null);
