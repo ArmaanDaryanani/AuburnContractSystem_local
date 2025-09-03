@@ -50,6 +50,19 @@ const ContractDocumentInlinePDF = dynamic(
   }
 );
 
+// Dynamically import DOCX viewer to avoid SSR issues
+const ContractDocumentInlineDOCX = dynamic(
+  () => import("@/components/contract-document-inline-docx").then(mod => mod.ContractDocumentInlineDOCX),
+  { 
+    ssr: false,
+    loading: () => (
+      <div className="flex items-center justify-center h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      </div>
+    )
+  }
+);
+
 interface Message {
   id: string;
   role: "user" | "assistant";
@@ -60,6 +73,7 @@ interface Message {
 export default function ContractReviewView() {
   const [file, setFile] = useState<File | null>(null);
   const [contractText, setContractText] = useState("");
+  const [contractHtml, setContractHtml] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [violations, setViolations] = useState<ViolationDetail[]>([]);
   const [confidence, setConfidence] = useState(0);
@@ -238,6 +252,11 @@ export default function ContractReviewView() {
       try {
         const extracted = await extractTextFromFile(file);
         
+        // Store HTML content if available (for DOCX)
+        if (extracted.html) {
+          setContractHtml(extracted.html);
+        }
+        
         if (extracted.error) {
           toast({
             title: "Extraction Warning",
@@ -285,6 +304,11 @@ export default function ContractReviewView() {
       
       try {
         const extracted = await extractTextFromFile(file);
+        
+        // Store HTML content if available (for DOCX)
+        if (extracted.html) {
+          setContractHtml(extracted.html);
+        }
         
         if (extracted.error) {
           toast({
@@ -1032,6 +1056,14 @@ ${contractText.substring(0, 1000)}${contractText.length > 1000 ? '...' : ''}
             file && detectDocumentType(file).type === DocumentType.PDF ? (
               <ContractDocumentInlinePDF
                 file={file}
+                violations={violations}
+                selectedViolationId={selectedViolationId}
+                onViolationClick={handleViolationSelect}
+              />
+            ) : file && detectDocumentType(file).type === DocumentType.DOCX && contractHtml ? (
+              <ContractDocumentInlineDOCX
+                file={file}
+                htmlContent={contractHtml}
                 violations={violations}
                 selectedViolationId={selectedViolationId}
                 onViolationClick={handleViolationSelect}

@@ -8,6 +8,7 @@ export interface ExtractedDocument {
   info?: Record<string, any>;
   error?: string;
   warning?: string;
+  messages?: any[];
 }
 
 export async function extractTextFromFile(file: File): Promise<ExtractedDocument> {
