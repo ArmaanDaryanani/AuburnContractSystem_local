@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { NavigationMinimal } from "@/components/navigation-minimal";
 import ContractReviewView from "@/components/views/contract-review-view";
+import ContractReviewViewMulti from "@/components/views/contract-review-view-multi";
 import BatchAuditView from "@/components/views/batch-audit-view";
 import MetricsView from "@/components/views/metrics-view";
 import FARMatrixView from "@/components/views/far-matrix-view";
 import AuburnPoliciesView from "@/components/views/auburn-policies-view";
 import KnowledgeBaseView from "@/components/views/knowledge-base-view";
+import { migrateSessionStorage, isMultiDocumentMode } from "@/lib/context-migration-helper";
 
 export type ViewType = 
   | "contract-review" 
@@ -19,11 +21,19 @@ export type ViewType =
 
 export function AppShell() {
   const [currentView, setCurrentView] = useState<ViewType>("contract-review");
+  const [useMultiDoc, setUseMultiDoc] = useState(true);
+
+  // Run migration on mount
+  useEffect(() => {
+    migrateSessionStorage();
+    setUseMultiDoc(isMultiDocumentMode());
+  }, []);
 
   const renderView = () => {
     switch (currentView) {
       case "contract-review":
-        return <ContractReviewView />;
+        // Use multi-document view by default, fall back to single if needed
+        return useMultiDoc ? <ContractReviewViewMulti /> : <ContractReviewView />;
       case "batch-audit":
         return <BatchAuditView />;
       case "metrics":
