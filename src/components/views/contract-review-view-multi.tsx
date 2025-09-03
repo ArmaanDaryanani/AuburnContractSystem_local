@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -36,6 +35,7 @@ import {
 } from "lucide-react";
 import { ContractAnalyzer } from "@/lib/contract-analysis";
 import { ContractDocumentInline } from "@/components/contract-document-inline";
+import { DocumentComparer } from "@/components/document-comparer";
 import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 import { extractTextFromFile } from "@/lib/document-extractor";
@@ -490,38 +490,38 @@ export default function ContractReviewViewMulti() {
       return null;
     }
 
-    return (
-      <div className="grid grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{doc1.name}</CardTitle>
-            <Badge variant="outline">{doc1.type.toUpperCase()}</Badge>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[500px]">
-              {/* Render document content */}
-              <div className="prose prose-sm max-w-none">
-                <pre className="whitespace-pre-wrap text-sm">{doc1.content}</pre>
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+    // Prepare violations for the comparison view
+    const allViolations = [
+      ...doc1.violations.map(v => ({ 
+        documentId: doc1Id,
+        text: v.problematicText || v.description,
+        severity: v.severity 
+      })),
+      ...doc2.violations.map(v => ({ 
+        documentId: doc2Id,
+        text: v.problematicText || v.description,
+        severity: v.severity 
+      }))
+    ];
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">{doc2.name}</CardTitle>
-            <Badge variant="outline">{doc2.type.toUpperCase()}</Badge>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-[500px]">
-              {/* Render document content */}
-              <div className="prose prose-sm max-w-none">
-                <pre className="whitespace-pre-wrap text-sm">{doc2.content}</pre>
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
+    return (
+      <DocumentComparer
+        document1={{
+          id: doc1.id,
+          name: doc1.name,
+          content: doc1.content,
+          type: doc1.type,
+        }}
+        document2={{
+          id: doc2.id,
+          name: doc2.name,
+          content: doc2.content,
+          type: doc2.type,
+        }}
+        onClose={() => disableComparison()}
+        highlightViolations={allViolations.length > 0}
+        violations={allViolations}
+      />
     );
   };
 
