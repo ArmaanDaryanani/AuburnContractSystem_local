@@ -39,7 +39,7 @@ const PDFViewer = dynamic(
 );
 
 const DOCXViewer = dynamic(
-  () => import('./docx-viewer-component').then(mod => mod.DOCXViewerComponent),
+  () => import('./docx-viewer-improved').then(mod => mod.DOCXViewerImproved),
   { 
     ssr: false,
     loading: () => (

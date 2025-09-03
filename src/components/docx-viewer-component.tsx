@@ -55,11 +55,16 @@ export function DOCXViewerComponent({
           renderEndnotes: true,
         });
 
-        // Apply zoom
-        if (containerRef.current.firstChild) {
-          (containerRef.current.firstChild as HTMLElement).style.transform = `scale(${zoom / 100})`;
-          (containerRef.current.firstChild as HTMLElement).style.transformOrigin = 'top left';
-        }
+        // Apply zoom after a delay to ensure DOM is ready
+        setTimeout(() => {
+          if (containerRef.current && containerRef.current.firstChild) {
+            const firstChild = containerRef.current.firstChild as HTMLElement;
+            if (firstChild && firstChild.style) {
+              firstChild.style.transform = `scale(${zoom / 100})`;
+              firstChild.style.transformOrigin = 'top left';
+            }
+          }
+        }, 100);
 
         // Add violation highlights after rendering
         setTimeout(() => addHighlights(), 100);
