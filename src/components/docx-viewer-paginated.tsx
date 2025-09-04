@@ -32,30 +32,19 @@ export function DocxViewerPaginated({
   const [pages, setPages] = useState<string[]>([]);
   const viewerRef = useRef<HTMLDivElement>(null);
 
-  // Add document click and escape key listeners to close popovers
+  // Add escape key listener to close modal
   useEffect(() => {
-    const handleDocumentClick = (e: MouseEvent) => {
-      // If clicking outside of a violation highlight, close all popovers
-      const target = e.target as HTMLElement;
-      if (!target.closest('.violation-highlight-container')) {
-        document.querySelectorAll('.violation-popover').forEach(p => {
-          (p as HTMLElement).style.display = 'none';
-        });
-      }
-    };
-
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        document.querySelectorAll('.violation-popover').forEach(p => {
-          (p as HTMLElement).style.display = 'none';
-        });
+        const modal = document.getElementById('violation-modal');
+        if (modal) {
+          modal.remove();
+        }
       }
     };
 
-    document.addEventListener('click', handleDocumentClick);
     document.addEventListener('keydown', handleEscKey);
     return () => {
-      document.removeEventListener('click', handleDocumentClick);
       document.removeEventListener('keydown', handleEscKey);
     };
   }, []);
@@ -348,71 +337,47 @@ export function DocxViewerPaginated({
             
             span.innerHTML = `
               <span class="highlighted-text violation-${violation.severity?.toLowerCase() || 'medium'}">${matchedText}</span>
-            <div class="violation-popover" id="popover-${uniqueId}">
-              <div class="violation-popover-content">
-                <div class="violation-header">
-                  <span class="violation-type">${violation.type}</span>
-                  <span class="violation-severity severity-${violation.severity?.toLowerCase()}">${violation.severity}</span>
-                </div>
-                <p class="violation-description">${violation.description}</p>
-                <div class="violation-suggestion">
-                  <strong>Suggested Fix:</strong> ${violation.suggestion}
-                </div>
-                ${violation.farReference ? `<div class="violation-reference">FAR Reference: ${violation.farReference}</div>` : ''}
-                <div class="violation-dismiss-hint">Click anywhere or press ESC to close</div>
-              </div>
-            </div>
-          `;
+            `;
           
-            // Add click handler with dynamic positioning
+            // Add click handler to show modal
             span.onclick = (e) => {
               e.stopPropagation();
-              const popover = document.getElementById(`popover-${uniqueId}`);
-              if (popover) {
-                const isVisible = popover.style.display === 'block';
-                document.querySelectorAll('.violation-popover').forEach(p => {
-                  (p as HTMLElement).style.display = 'none';
-                });
-                
-                if (!isVisible) {
-                  // Get position of the clicked element
-                  const rect = span.getBoundingClientRect();
-                  const viewportWidth = window.innerWidth;
-                  const viewportHeight = window.innerHeight;
-                  
-                  // Position below the highlight
-                  let top = rect.bottom + 8;
-                  let left = rect.left + (rect.width / 2);
-                  
-                  // Adjust if popover would go off-screen
-                  const popoverWidth = 400; // Approximate width
-                  const popoverHeight = 200; // Approximate min height
-                  
-                  // Adjust horizontal position if needed
-                  if (left - popoverWidth/2 < 10) {
-                    // Too close to left edge
-                    left = popoverWidth/2 + 10;
-                  } else if (left + popoverWidth/2 > viewportWidth - 10) {
-                    // Too close to right edge
-                    left = viewportWidth - popoverWidth/2 - 10;
-                  }
-                  
-                  // If popover would go below viewport, position above
-                  let position = 'below';
-                  if (top + popoverHeight > viewportHeight - 10) {
-                    top = rect.top - popoverHeight - 8;
-                    position = 'above';
-                  }
-                  
-                  popover.setAttribute('data-position', position);
-                  popover.style.top = `${top}px`;
-                  popover.style.left = `${left}px`;
-                  popover.style.transform = 'translateX(-50%)';
-                  popover.style.display = 'block';
-                } else {
-                  popover.style.display = 'none';
-                }
+              
+              // Remove any existing modal
+              const existingModal = document.getElementById('violation-modal');
+              if (existingModal) {
+                existingModal.remove();
               }
+              
+              // Create modal overlay
+              const modal = document.createElement('div');
+              modal.id = 'violation-modal';
+              modal.className = 'violation-modal-overlay';
+              modal.innerHTML = `
+                <div class="violation-modal-content">
+                  <button class="violation-modal-close" onclick="document.getElementById('violation-modal').remove()">×</button>
+                  <div class="violation-modal-header">
+                    <span class="violation-type">${violation.type}</span>
+                    <span class="violation-severity severity-${violation.severity?.toLowerCase()}">${violation.severity}</span>
+                  </div>
+                  <p class="violation-modal-description">${violation.description}</p>
+                  <div class="violation-modal-suggestion">
+                    <strong>Suggested Fix:</strong>
+                    <p>${violation.suggestion}</p>
+                  </div>
+                  ${violation.farReference ? `<div class="violation-modal-reference">FAR Reference: ${violation.farReference}</div>` : ''}
+                  <div class="violation-modal-hint">Click × or press ESC to close</div>
+                </div>
+              `;
+              
+              document.body.appendChild(modal);
+              
+              // Close on overlay click
+              modal.onclick = (e) => {
+                if (e.target === modal) {
+                  modal.remove();
+                }
+              };
             };
             
             const originalText = node.nodeValue || '';
@@ -616,58 +581,128 @@ export function DocxViewerPaginated({
         .violation-highlight-container {
           position: relative;
           display: inline;
+          cursor: pointer;
         }
         
-        .violation-popover {
-          display: none;
+        /* Modal Overlay Styles */
+        .violation-modal-overlay {
           position: fixed;
-          z-index: 1000;
-          min-width: 350px;
-          max-width: 450px;
-          pointer-events: auto;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          animation: fadeIn 0.2s ease;
         }
         
-        .violation-popover::before {
-          content: '';
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        .violation-modal-content {
+          background: white;
+          border-radius: 12px;
+          padding: 24px;
+          max-width: 500px;
+          width: 90%;
+          max-height: 80vh;
+          overflow-y: auto;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+          position: relative;
+          animation: slideUp 0.2s ease;
+        }
+        
+        @keyframes slideUp {
+          from { 
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to { 
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        
+        .violation-modal-close {
           position: absolute;
-          width: 0;
-          height: 0;
-          border-left: 8px solid transparent;
-          border-right: 8px solid transparent;
+          top: 16px;
+          right: 16px;
+          background: none;
+          border: none;
+          font-size: 28px;
+          color: #6b7280;
+          cursor: pointer;
+          width: 32px;
+          height: 32px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          border-radius: 4px;
+          transition: background 0.2s;
         }
         
-        .violation-popover[data-position="below"]::before {
-          top: -8px;
-          left: 50%;
-          transform: translateX(-50%);
-          border-bottom: 8px solid white;
-          filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.1));
+        .violation-modal-close:hover {
+          background: #f3f4f6;
         }
         
-        .violation-popover[data-position="above"]::before {
-          bottom: -8px;
-          left: 50%;
-          transform: translateX(-50%);
-          border-top: 8px solid white;
-          filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+        .violation-modal-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid #e5e7eb;
         }
         
-        .violation-popover-content {
-          background: white !important;
+        .violation-modal-description {
+          font-size: 14px;
+          color: #4b5563;
+          margin-bottom: 20px;
+          line-height: 1.6;
+        }
+        
+        .violation-modal-suggestion {
+          background-color: #f0fdf4;
+          border: 1px solid #bbf7d0;
           border-radius: 8px;
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.05);
-          border: 1px solid #e5e7eb;
           padding: 16px;
+          margin-bottom: 16px;
         }
         
-        .violation-popover-content * {
-          background: transparent !important;
+        .violation-modal-suggestion strong {
+          display: block;
+          margin-bottom: 8px;
+          color: #14532d;
+          font-size: 14px;
         }
         
-        .violation-popover-content .highlighted-text {
-          background: transparent !important;
-          border-bottom: none !important;
-          padding: 0 !important;
+        .violation-modal-suggestion p {
+          color: #166534;
+          font-size: 13px;
+          line-height: 1.5;
+          margin: 0;
+        }
+        
+        .violation-modal-reference {
+          font-size: 12px;
+          color: #6b7280;
+          padding: 10px;
+          background-color: #f9fafb;
+          border-radius: 6px;
+          margin-bottom: 12px;
+        }
+        
+        .violation-modal-hint {
+          font-size: 11px;
+          color: #9ca3af;
+          text-align: center;
+          margin-top: 16px;
+          font-style: italic;
         }
         
         .violation-header {
