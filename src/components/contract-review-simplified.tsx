@@ -130,6 +130,9 @@ export default function ContractReviewSimplified() {
       return;
     }
 
+    console.log('🔍 Starting analysis with text length:', contractText.length);
+    console.log('📝 Sample text:', contractText.substring(0, 500));
+
     setIsAnalyzing(true);
     setAnalysisProgress(0);
     setViolations([]);
@@ -161,7 +164,9 @@ export default function ContractReviewSimplified() {
       let result;
       if (response.ok) {
         result = await response.json();
+        console.log('✅ API Analysis result:', result);
       } else {
+        console.log('⚠️ API failed, using local analysis');
         // Fallback to local analysis
         const analysis = contractAnalyzer.current.analyzeContract(contractText);
         result = {
@@ -169,6 +174,7 @@ export default function ContractReviewSimplified() {
           confidence: analysis.confidence,
           riskScore: analysis.riskScore
         };
+        console.log('📊 Local analysis result:', result);
       }
       
       clearInterval(progressInterval);

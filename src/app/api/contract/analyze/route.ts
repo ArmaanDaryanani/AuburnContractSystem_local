@@ -188,7 +188,7 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
     const violations = [];
     
     // Check for common issues
-    if (text.toLowerCase().includes('indemnif')) {
+    if (text.toLowerCase().includes('indemnif') || text.toLowerCase().includes('hold harmless')) {
       violations.push({
         id: "ai-1",
         type: "indemnification",
@@ -197,7 +197,8 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
         description: "Auburn cannot provide indemnification as a state entity",
         auburnPolicy: "State entity restrictions - Auburn Contract Management Guide",
         farReference: "FAR 28.106",
-        confidence: 0.95
+        confidence: 0.95,
+        clause: text.match(/.{0,100}(indemnif|hold harmless).{0,100}/i)?.[0] || "Indemnification clause found"
       });
     }
     
@@ -210,20 +211,56 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
         description: "Intellectual property terms may conflict with Auburn policies",
         auburnPolicy: "Faculty IP retention policy",
         farReference: "FAR 27.402",
-        confidence: 0.85
+        confidence: 0.85,
+        clause: text.match(/.{0,100}(intellectual property|work product).{0,100}/i)?.[0] || "IP clause found"
       });
     }
     
-    if (text.match(/payment.{0,50}(60|90|120) days/i)) {
+    // Check for various payment term issues
+    if (text.match(/payment.{0,100}(60|90|120) days/i) || 
+        text.match(/ten \(10\) business days/i) ||
+        text.match(/payment.{0,100}after.{0,50}receiving payment/i)) {
       violations.push({
         id: "ai-3",
         type: "payment",
-        severity: "MEDIUM",
+        severity: "HIGH",
         title: "Non-standard payment terms",
-        description: "Payment terms exceed Auburn's NET 30 policy",
+        description: "Payment terms don't match Auburn's NET 30 policy. Auburn requires NET 30 days, not payment contingent on receiving funds from others.",
         auburnPolicy: "Auburn General Terms and Conditions - Payment Terms",
         farReference: "FAR 32.906",
-        confidence: 0.90
+        confidence: 0.90,
+        clause: text.match(/.{0,100}(payment|ten \(10\) business days).{0,100}/i)?.[0] || "Payment clause found",
+        suggestion: "Payment shall be made NET 30 days from receipt of properly submitted invoice"
+      });
+    }
+    
+    // Check for insurance requirements
+    if (text.match(/insurance.{0,100}(required|maintain|provide)/i)) {
+      violations.push({
+        id: "ai-4",
+        type: "insurance",
+        severity: "MEDIUM",
+        title: "Insurance requirement issue",
+        description: "Auburn is self-insured through the State of Alabama and cannot provide commercial insurance certificates",
+        auburnPolicy: "Auburn Self-Insurance Policy",
+        farReference: "FAR 28.301",
+        confidence: 0.85,
+        clause: text.match(/.{0,100}insurance.{0,100}/i)?.[0] || "Insurance clause found"
+      });
+    }
+    
+    // Check for termination clauses
+    if (!text.toLowerCase().includes('termination for convenience')) {
+      violations.push({
+        id: "ai-5",
+        type: "termination",
+        severity: "MEDIUM",
+        title: "Missing termination for convenience",
+        description: "Auburn requires a termination for convenience clause in all contracts",
+        auburnPolicy: "Auburn Contract Requirements",
+        farReference: "FAR 52.249",
+        confidence: 0.80,
+        suggestion: "Add termination for convenience clause allowing either party to terminate with 30 days notice"
       });
     }
     
