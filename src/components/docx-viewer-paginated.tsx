@@ -196,7 +196,7 @@ export function DocxViewerPaginated({
         searchTexts.push('ten (10) business days');
         searchTexts.push('payment terms');
         searchTexts.push('receiving payment from');
-        searchTexts.push('Company's payment terms');
+        searchTexts.push("Company's payment terms");
         searchTexts.push('10) business days of receiving payment');
       }
       if (violation.type?.toLowerCase().includes('indemnif')) {
