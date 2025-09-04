@@ -66,7 +66,7 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
     <div className={cn("bg-white border-b border-gray-200", className)}>
       <div className="px-4 py-1">
         {/* Minimal Summary Header */}
-        <div className="flex items-center gap-3 mb-1">
+        <div className="flex items-center justify-center gap-3 mb-1">
           <span className="text-xs font-medium text-gray-900">
             {uniqueViolations.length} issues
           </span>
@@ -95,8 +95,8 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
         </div>
 
         {/* Minimal Horizontal Scrolling Cards */}
-        <div className="overflow-x-auto">
-          <div className="flex gap-2">
+        <div className="overflow-x-auto pb-1">
+          <div className="flex gap-2 justify-center px-2">
             {uniqueViolations.map((violation, index) => (
               <button
                 key={violation.id || index}

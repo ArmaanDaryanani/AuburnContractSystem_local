@@ -280,9 +280,21 @@ export function DocxViewerPaginated({
           searchTexts.push('key subcontractor personnel');
           searchTexts.push('personnel');
         }
-        // Extract key phrases from description
-        const descWords = violation.description?.split(' ').slice(0, 5).join(' ');
-        if (descWords) {
+        if (violation.description?.toLowerCase().includes('written')) {
+          searchTexts.push('written');
+          searchTexts.push('email');
+          searchTexts.push('electronic');
+          searchTexts.push('invoices');
+        }
+        if (violation.description?.toLowerCase().includes('invoice')) {
+          searchTexts.push('invoice');
+          searchTexts.push('invoices');
+          searchTexts.push('email');
+          searchTexts.push('submitted via email');
+        }
+        // Extract key phrases from description - but shorter to avoid overlaps
+        const descWords = violation.description?.split(' ').slice(2, 5).join(' ');
+        if (descWords && descWords.length > 10) {
           searchTexts.push(descWords);
         }
       }
@@ -299,6 +311,12 @@ export function DocxViewerPaginated({
       while ((node = walker.nextNode()) && !found) {
         const nodeText = node.nodeValue || '';
         const nodeTextLower = nodeText.toLowerCase();
+        
+        // Skip if this text node is already part of a highlight
+        if (node.parentElement?.classList.contains('highlighted-text') || 
+            node.parentElement?.parentElement?.classList.contains('violation-highlight-container')) {
+          continue;
+        }
         
         for (const searchText of searchTexts) {
           const searchLower = searchText.toLowerCase();
