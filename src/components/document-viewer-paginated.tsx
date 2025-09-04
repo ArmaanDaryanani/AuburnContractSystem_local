@@ -100,32 +100,45 @@ export function DocumentViewerPaginated({
   const handleViolationClick = (violation: ViolationDetail, index: number) => {
     console.log('Violation clicked:', violation);
     
-    // Search for the violation text across all pages
-    const searchText = (violation as any).problematicText || violation.description || '';
-    
-    // Try each page to find where this violation appears
+    // Based on violation type/index, estimate which page it might be on
+    // Payment issues are usually early in the contract
+    // Termination issues are usually in the middle/end
     let targetPage = 1;
-    for (let page = 1; page <= totalPages; page++) {
-      // Check if we need to search this page
-      // For now, distribute violations across pages roughly
-      const violationsPerPage = Math.ceil(violations.length / Math.max(1, totalPages));
-      targetPage = Math.min(Math.max(1, Math.floor(index / violationsPerPage) + 1), totalPages);
+    
+    if (violation.type?.toLowerCase().includes('payment') || 
+        violation.description?.toLowerCase().includes('payment')) {
+      targetPage = Math.min(3, totalPages); // Payment terms usually in first few pages
+    } else if (violation.type?.toLowerCase().includes('termination') || 
+               violation.description?.toLowerCase().includes('termination')) {
+      targetPage = Math.min(Math.floor(totalPages * 0.6), totalPages); // Usually mid-contract
+    } else if (violation.description?.toLowerCase().includes('article ix')) {
+      targetPage = Math.min(Math.floor(totalPages * 0.8), totalPages); // Later articles
+    } else {
+      // Default distribution based on index
+      targetPage = Math.min(Math.max(1, Math.floor((index / violations.length) * totalPages) + 1), totalPages);
     }
     
-    // Navigate to the target page
+    console.log(`Navigating to page ${targetPage} for violation:`, violation.type);
     setCurrentPage(targetPage);
     
-    // After page loads, highlight the specific violation
+    // After page loads, try to find and highlight the violation
     setTimeout(() => {
-      const violationElements = document.querySelectorAll('.violation-highlight-container');
-      // Find the actual highlighted element with matching text
-      Array.from(violationElements).forEach((el) => {
-        if (el.textContent?.includes(searchText.substring(0, 20))) {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          (el as HTMLElement).click();
+      // Force re-apply highlights on the new page
+      const viewerEl = document.querySelector('.docx-page-wrapper');
+      if (viewerEl) {
+        const violationElements = viewerEl.querySelectorAll('.violation-highlight-container');
+        console.log(`Found ${violationElements.length} highlighted elements on page ${targetPage}`);
+        
+        if (violationElements.length > 0) {
+          // Click the first one found (or try to match by index)
+          const targetEl = violationElements[Math.min(index, violationElements.length - 1)] as HTMLElement;
+          if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetEl.click();
+          }
         }
-      });
-    }, 800);
+      }
+    }, 1000);
   };
   
   const handlePreviousPage = () => {

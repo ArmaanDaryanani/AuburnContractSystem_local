@@ -129,7 +129,7 @@ export function DocxViewerPaginated({
             setError(null);
             
             // Apply violation highlights after rendering
-            setTimeout(() => applyViolationHighlights(), 500);
+            setTimeout(() => applyViolationHighlights(), 200);
             
           } catch (conversionError: any) {
             console.error('Mammoth conversion error:', conversionError);
@@ -159,30 +159,36 @@ export function DocxViewerPaginated({
 
   // Re-apply highlights when violations change - optimize by only when necessary
   useEffect(() => {
-    if (pages.length > 0 && violations.length > 0) {
-      // Use requestAnimationFrame for smoother rendering
-      const handle = requestAnimationFrame(() => applyViolationHighlights());
-      return () => cancelAnimationFrame(handle);
+    if (pages.length > 0 && violations.length > 0 && !loading) {
+      // Delay slightly to ensure DOM is ready
+      const timer = setTimeout(() => {
+        applyViolationHighlights();
+      }, 150);
+      return () => clearTimeout(timer);
     }
-  }, [violations.length, pages.length]); // Only re-run when counts change, not on every page change
+  }, [violations.length, pages.length, loading]); // Only re-run when counts change, not on every page change
 
   const applyViolationHighlights = () => {
     if (!viewerRef.current || !violations.length) return;
 
-    // Batch DOM operations for better performance
-    const fragment = document.createDocumentFragment();
+    console.log('Applying highlights to', violations.length, 'violations on page', currentPage);
+    
+    // Clear existing highlights first
+    const existingHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
+    existingHighlights.forEach(el => {
+      const parent = el.parentNode;
+      const text = el.textContent || '';
+      if (parent) {
+        parent.replaceChild(document.createTextNode(text), el);
+      }
+    });
     
     violations.forEach(violation => {
       // Try to find text to highlight - use clause, problematicText, or description keywords
       let searchTexts = [];
       
       // Check what fields are available
-      console.log('Violation fields:', {
-        type: violation.type,
-        clause: violation.clause,
-        problematicText: (violation as any).problematicText,
-        description: violation.description?.substring(0, 50)
-      });
+      console.log('Looking for violation:', violation.type, 'on page', currentPage);
       
       if ((violation as any).problematicText) {
         searchTexts.push((violation as any).problematicText);
@@ -192,22 +198,38 @@ export function DocxViewerPaginated({
         searchTexts.push(violation.clause.substring(0, 100));
       }
       
-      // Add specific keywords based on violation type
-      if (violation.type?.toLowerCase().includes('payment')) {
+      // Add specific keywords based on violation type and description
+      if (violation.type?.toLowerCase().includes('payment') || violation.description?.toLowerCase().includes('payment')) {
         searchTexts.push('ten (10) business days');
         searchTexts.push('payment terms');
+        searchTexts.push('payment will be made ten');
         searchTexts.push('receiving payment from');
         searchTexts.push("Company's payment terms");
         searchTexts.push('10) business days of receiving payment');
+        searchTexts.push('invoice');
       }
       if (violation.type?.toLowerCase().includes('indemnif')) {
         searchTexts.push('indemnify');
         searchTexts.push('indemnification');
         searchTexts.push('hold harmless');
       }
-      if (violation.type?.toLowerCase().includes('termination')) {
+      if (violation.type?.toLowerCase().includes('termination') || violation.description?.toLowerCase().includes('termination')) {
         searchTexts.push('termination');
         searchTexts.push('terminate');
+        searchTexts.push('Termination for Convenience');
+        searchTexts.push('issuance of Task Orders');
+        searchTexts.push('Task Orders');
+      }
+      // Look for other specific terms from the descriptions
+      if (violation.description?.toLowerCase().includes('grant')) {
+        searchTexts.push('grant');
+        searchTexts.push('rights');
+        searchTexts.push('Company');
+      }
+      if (violation.description?.toLowerCase().includes('article')) {
+        searchTexts.push('Article IX');
+        searchTexts.push('ARTICLE IX');
+        searchTexts.push('ARTICLE');
       }
 
       const walker = document.createTreeWalker(
@@ -294,11 +316,13 @@ export function DocxViewerPaginated({
   // Re-apply highlights when page changes - optimized
   useEffect(() => {
     if (pages.length > 0 && !loading && violations.length > 0) {
-      // Use requestAnimationFrame for smoother performance
-      const handle = requestAnimationFrame(() => applyViolationHighlights());
-      return () => cancelAnimationFrame(handle);
+      // Delay to ensure DOM is rendered
+      const timer = setTimeout(() => {
+        applyViolationHighlights();
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [currentPage, loading]); // Reduced dependencies
+  }, [currentPage, loading, violations]); // Added violations to dependencies
 
   if (loading) {
     return (
