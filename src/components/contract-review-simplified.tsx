@@ -218,16 +218,18 @@ export default function ContractReviewSimplified() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Contract Review System
-          </h1>
-          <p className="text-gray-600">
-            Auburn University Office of Sponsored Programs
-          </p>
-        </div>
+      <div className={`${file ? 'max-w-full' : 'max-w-7xl mx-auto'} ${file ? 'p-0' : 'p-6'}`}>
+        {/* Header - Only show when no document */}
+        {!file && (
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Contract Review System
+            </h1>
+            <p className="text-gray-600">
+              Auburn University Office of Sponsored Programs
+            </p>
+          </div>
+        )}
 
         {/* Stats Bar */}
         {hasAnalyzed && (
@@ -279,9 +281,9 @@ export default function ContractReviewSimplified() {
           </div>
         )}
 
-        <div className="max-w-5xl mx-auto">
+        <div className={file ? "" : "max-w-5xl mx-auto"}>
           {/* Document Display */}
-          <div className="space-y-4">
+          <div className={file ? "" : "space-y-4"}>
             {!file ? (
               <Card>
                 <CardContent className="p-8">
