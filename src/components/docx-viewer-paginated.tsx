@@ -364,7 +364,7 @@ export function DocxViewerPaginated({
             </div>
           `;
           
-            // Add click handler
+            // Add click handler with dynamic positioning
             span.onclick = (e) => {
               e.stopPropagation();
               const popover = document.getElementById(`popover-${uniqueId}`);
@@ -373,7 +373,45 @@ export function DocxViewerPaginated({
                 document.querySelectorAll('.violation-popover').forEach(p => {
                   (p as HTMLElement).style.display = 'none';
                 });
-                popover.style.display = isVisible ? 'none' : 'block';
+                
+                if (!isVisible) {
+                  // Get position of the clicked element
+                  const rect = span.getBoundingClientRect();
+                  const viewportWidth = window.innerWidth;
+                  const viewportHeight = window.innerHeight;
+                  
+                  // Position below the highlight
+                  let top = rect.bottom + 8;
+                  let left = rect.left + (rect.width / 2);
+                  
+                  // Adjust if popover would go off-screen
+                  const popoverWidth = 400; // Approximate width
+                  const popoverHeight = 200; // Approximate min height
+                  
+                  // Adjust horizontal position if needed
+                  if (left - popoverWidth/2 < 10) {
+                    // Too close to left edge
+                    left = popoverWidth/2 + 10;
+                  } else if (left + popoverWidth/2 > viewportWidth - 10) {
+                    // Too close to right edge
+                    left = viewportWidth - popoverWidth/2 - 10;
+                  }
+                  
+                  // If popover would go below viewport, position above
+                  let position = 'below';
+                  if (top + popoverHeight > viewportHeight - 10) {
+                    top = rect.top - popoverHeight - 8;
+                    position = 'above';
+                  }
+                  
+                  popover.setAttribute('data-position', position);
+                  popover.style.top = `${top}px`;
+                  popover.style.left = `${left}px`;
+                  popover.style.transform = 'translateX(-50%)';
+                  popover.style.display = 'block';
+                } else {
+                  popover.style.display = 'none';
+                }
               }
             };
             
@@ -582,11 +620,7 @@ export function DocxViewerPaginated({
         
         .violation-popover {
           display: none;
-          position: absolute;
-          top: 100%;
-          left: 50%;
-          transform: translateX(-50%);
-          margin-top: 8px;
+          position: fixed;
           z-index: 1000;
           min-width: 350px;
           max-width: 450px;
@@ -596,15 +630,26 @@ export function DocxViewerPaginated({
         .violation-popover::before {
           content: '';
           position: absolute;
-          top: -8px;
-          left: 50%;
-          transform: translateX(-50%);
           width: 0;
           height: 0;
           border-left: 8px solid transparent;
           border-right: 8px solid transparent;
+        }
+        
+        .violation-popover[data-position="below"]::before {
+          top: -8px;
+          left: 50%;
+          transform: translateX(-50%);
           border-bottom: 8px solid white;
           filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.1));
+        }
+        
+        .violation-popover[data-position="above"]::before {
+          bottom: -8px;
+          left: 50%;
+          transform: translateX(-50%);
+          border-top: 8px solid white;
+          filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
         }
         
         .violation-popover-content {
