@@ -130,24 +130,36 @@ export function DocumentViewerPaginated({
     console.log(`Navigating to page ${targetPage} for violation:`, violation.type);
     setCurrentPage(targetPage);
     
-    // After page loads, try to find and highlight the violation
+    // After page loads, try to find and highlight the specific violation
     setTimeout(() => {
       // Force re-apply highlights on the new page
       const viewerEl = document.querySelector('.docx-page-wrapper');
       if (viewerEl) {
+        // Find elements with matching violation ID
         const violationElements = viewerEl.querySelectorAll('.violation-highlight-container');
-        console.log(`Found ${violationElements.length} highlighted elements on page ${targetPage}`);
+        let targetEl: HTMLElement | null = null;
         
-        if (violationElements.length > 0) {
-          // Click the first one found (or try to match by index)
-          const targetEl = violationElements[Math.min(index, violationElements.length - 1)] as HTMLElement;
-          if (targetEl) {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            targetEl.click();
+        // Try to find element with matching violation ID
+        violationElements.forEach((el) => {
+          const elViolationId = (el as HTMLElement).getAttribute('data-violation-id');
+          if (elViolationId === (violation.id || violation.type)) {
+            targetEl = el as HTMLElement;
           }
+        });
+        
+        // If not found by ID, try by index
+        if (!targetEl && violationElements.length > 0) {
+          targetEl = violationElements[Math.min(index, violationElements.length - 1)] as HTMLElement;
+        }
+        
+        console.log(`Found violation element for ${violation.type}:`, targetEl ? 'yes' : 'no');
+        
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          targetEl.click();
         }
       }
-    }, 1000);
+    }, 1200);
   };
   
   const handlePreviousPage = () => {

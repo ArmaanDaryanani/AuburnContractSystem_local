@@ -331,9 +331,14 @@ export function DocxViewerPaginated({
             const matchLength = Math.min(searchLower.length, nodeText.length - index);
             const matchedText = nodeText.substring(index, index + matchLength);
             
+            // Create unique ID for this specific highlight
+            const uniqueId = `${violation.id || violation.type}_${index}_${Date.now()}`;
+            span.setAttribute('data-violation-id', violation.id || violation.type || '');
+            span.setAttribute('data-violation-index', index.toString());
+            
             span.innerHTML = `
               <span class="highlighted-text violation-${violation.severity?.toLowerCase() || 'medium'}">${matchedText}</span>
-            <div class="violation-popover" id="popover-${violation.id}">
+            <div class="violation-popover" id="popover-${uniqueId}">
               <div class="violation-popover-content">
                 <div class="violation-header">
                   <span class="violation-type">${violation.type}</span>
@@ -352,7 +357,7 @@ export function DocxViewerPaginated({
             // Add click handler
             span.onclick = (e) => {
               e.stopPropagation();
-              const popover = document.getElementById(`popover-${violation.id}`);
+              const popover = document.getElementById(`popover-${uniqueId}`);
               if (popover) {
                 const isVisible = popover.style.display === 'block';
                 document.querySelectorAll('.violation-popover').forEach(p => {
