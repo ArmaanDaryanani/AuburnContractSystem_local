@@ -1063,7 +1063,6 @@ ${contractText.substring(0, 1000)}${contractText.length > 1000 ? '...' : ''}
             ) : file && detectDocumentType(file).type === DocumentType.DOCX && contractHtml ? (
               <ContractDocumentInlineDOCX
                 file={file}
-                htmlContent={contractHtml}
                 violations={violations}
                 selectedViolationId={selectedViolationId}
                 onViolationClick={handleViolationSelect}

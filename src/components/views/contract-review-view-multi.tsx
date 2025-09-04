@@ -422,6 +422,8 @@ export default function ContractReviewViewMulti() {
                       ...v,
                       clause: v.problematicText || v.description || '',
                       location: v.location || '',
+                      suggestion: v.suggestion || '',
+                      confidence: v.confidence || 0,
                       severity: (v.severity?.toUpperCase() || 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
                     }))}
                     selectedViolationId={state.selectedViolationId}
@@ -430,11 +432,12 @@ export default function ContractReviewViewMulti() {
                 ) : doc.type === 'docx' && doc.file ? (
                   <ContractDocumentInlineDOCX
                     file={doc.file}
-                    htmlContent={doc.htmlContent || doc.content}
                     violations={doc.violations.map(v => ({
                       ...v,
                       clause: v.problematicText || v.description || '',
                       location: v.location || '',
+                      suggestion: v.suggestion || '',
+                      confidence: v.confidence || 0,
                       severity: (v.severity?.toUpperCase() || 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
                     }))}
                     selectedViolationId={state.selectedViolationId}
@@ -447,6 +450,8 @@ export default function ContractReviewViewMulti() {
                       ...v,
                       clause: v.problematicText || v.description || '',
                       location: v.location || '',
+                      suggestion: v.suggestion || '',
+                      confidence: v.confidence || 0,
                       severity: (v.severity?.toUpperCase() || 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
                     }))}
                     selectedViolationId={state.selectedViolationId}

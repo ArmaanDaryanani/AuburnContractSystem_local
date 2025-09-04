@@ -1,9 +1,21 @@
 import { useState, useCallback, useEffect } from 'react';
 import { PDFAnnotation } from '@/components/pdf-highlighter-wrapper';
-import { DOCXAnnotation } from '@/components/docx-highlighter-wrapper';
 import { AnnotationsService } from '@/lib/supabase/annotations';
 import { DocumentAnnotation } from '@/lib/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
+// Define DOCXAnnotation type locally since the wrapper was removed
+interface DOCXAnnotation {
+  id: string;
+  text: string;
+  comment?: string;
+  color?: string;
+  pageNumber?: number;
+  severity?: string;
+  violationId?: string;
+  position?: any;
+  serializedRange?: string;
+}
 
 type Annotation = PDFAnnotation | DOCXAnnotation;
 
@@ -37,7 +49,7 @@ export function useSupabaseAnnotations({
       text: annotation.text,
       color: annotation.color,
       comment: annotation.comment,
-      severity: annotation.severity,
+      severity: annotation.severity as any,
       violation_id: annotation.violationId,
       user_id: userId
     };
@@ -157,7 +169,7 @@ export function useSupabaseAnnotations({
     try {
       await AnnotationsService.update(id, {
         comment: updates.comment,
-        severity: updates.severity,
+        severity: updates.severity as any,
         color: updates.color
       });
       
