@@ -48,17 +48,24 @@ export default function ContractReviewSimplified() {
       });
       
       try {
-        const extracted = await extractTextFromFile(file);
-        
-        if (extracted.error) {
-          toast({
-            title: "Extraction Warning",
-            description: extracted.error,
-            variant: "default",
-          });
+        // For DOCX files, skip initial extraction as the paginated viewer will handle it
+        const docType = detectDocumentType(file);
+        if (docType.type === 'docx') {
+          console.log('DOCX file detected, skipping initial extraction');
+          // Don't set contract text yet - wait for paginated viewer to extract it
+        } else {
+          const extracted = await extractTextFromFile(file);
+          
+          if (extracted.error) {
+            toast({
+              title: "Extraction Warning",
+              description: extracted.error,
+              variant: "default",
+            });
+          }
+          
+          setContractText(extracted.text);
         }
-        
-        setContractText(extracted.text);
         
         toast({
           title: "Document loaded",
@@ -89,17 +96,24 @@ export default function ContractReviewSimplified() {
       });
       
       try {
-        const extracted = await extractTextFromFile(file);
-        
-        if (extracted.error) {
-          toast({
-            title: "Extraction Warning",
-            description: extracted.error,
-            variant: "default",
-          });
+        // For DOCX files, skip initial extraction as the paginated viewer will handle it
+        const docType = detectDocumentType(file);
+        if (docType.type === 'docx') {
+          console.log('DOCX file detected, skipping initial extraction');
+          // Don't set contract text yet - wait for paginated viewer to extract it
+        } else {
+          const extracted = await extractTextFromFile(file);
+          
+          if (extracted.error) {
+            toast({
+              title: "Extraction Warning",
+              description: extracted.error,
+              variant: "default",
+            });
+          }
+          
+          setContractText(extracted.text);
         }
-        
-        setContractText(extracted.text);
         
         toast({
           title: "Document loaded",
@@ -350,7 +364,8 @@ export default function ContractReviewSimplified() {
                 onAnalyze={analyzeContract}
                 isAnalyzing={isAnalyzing}
                 onTextExtracted={(text) => {
-                  console.log('📄 Text extracted from DOCX, updating contract text');
+                  console.log('📄 Text extracted from DOCX, length:', text.length);
+                  console.log('📄 Sample of extracted text:', text.substring(0, 200));
                   setContractText(text);
                 }}
               />

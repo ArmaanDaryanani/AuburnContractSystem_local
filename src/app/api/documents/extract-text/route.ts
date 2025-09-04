@@ -144,34 +144,13 @@ export async function POST(request: NextRequest) {
         } catch (docxError: any) {
           console.error('DOCX extraction failed:', docxError);
           
-          // Try basic text extraction as fallback
-          try {
-            const text = await file.text();
-            if (text && text.length > 0) {
-              // Basic DOCX binary contains text that we can partially extract
-              // Remove binary characters and keep readable text
-              const cleanText = text.replace(/[\x00-\x1F\x7F-\x9F]/g, ' ')
-                .replace(/\s+/g, ' ')
-                .substring(0, 50000) // Limit size
-                .trim();
-              
-              if (cleanText.length > 100) {
-                return NextResponse.json({
-                  text: cleanText,
-                  type: 'docx',
-                  warning: 'Partial extraction only - some formatting may be lost'
-                });
-              }
-            }
-          } catch (e) {
-            console.error('Fallback text extraction failed:', e);
-          }
-          
+          // Don't try to read DOCX as text - it's binary and will return garbage
+          // Return empty text and let the client-side viewer handle it
           return NextResponse.json({ 
-            text: `Document: ${file.name}\n\nContent extraction in progress. The document has been loaded and will be analyzed.`,
+            text: '', // Return empty text instead of binary garbage
             type: 'docx',
-            error: `Extraction issue: ${docxError.message || 'Unknown error'}`,
-            warning: 'Document loaded with limited extraction'
+            error: `DOCX extraction failed: ${docxError.message || 'Unknown error'}`,
+            warning: 'Document will be processed by viewer'
           });
         }
         
