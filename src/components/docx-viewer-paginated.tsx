@@ -32,6 +32,34 @@ export function DocxViewerPaginated({
   const [pages, setPages] = useState<string[]>([]);
   const viewerRef = useRef<HTMLDivElement>(null);
 
+  // Add document click and escape key listeners to close popovers
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      // If clicking outside of a violation highlight, close all popovers
+      const target = e.target as HTMLElement;
+      if (!target.closest('.violation-highlight-container')) {
+        document.querySelectorAll('.violation-popover').forEach(p => {
+          (p as HTMLElement).style.display = 'none';
+        });
+      }
+    };
+
+    const handleEscKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.violation-popover').forEach(p => {
+          (p as HTMLElement).style.display = 'none';
+        });
+      }
+    };
+
+    document.addEventListener('click', handleDocumentClick);
+    document.addEventListener('keydown', handleEscKey);
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+      document.removeEventListener('keydown', handleEscKey);
+    };
+  }, []);
+
   useEffect(() => {
     if (!file) return;
 
@@ -271,6 +299,7 @@ export function DocxViewerPaginated({
                   <strong>Suggested Fix:</strong> ${violation.suggestion}
                 </div>
                 ${violation.farReference ? `<div class="violation-reference">FAR Reference: ${violation.farReference}</div>` : ''}
+                <div class="violation-dismiss-hint">Click anywhere or press ESC to close</div>
               </div>
             </div>
           `;
@@ -493,6 +522,7 @@ export function DocxViewerPaginated({
           z-index: 1000;
           min-width: 350px;
           max-width: 450px;
+          pointer-events: auto;
         }
         
         .violation-popover::before {
@@ -586,6 +616,16 @@ export function DocxViewerPaginated({
           padding: 6px;
           background-color: #f9fafb;
           border-radius: 4px;
+        }
+        
+        .violation-dismiss-hint {
+          font-size: 10px;
+          color: #9ca3af;
+          text-align: center;
+          margin-top: 10px;
+          padding-top: 8px;
+          border-top: 1px solid #f3f4f6;
+          font-style: italic;
         }
         
         .page-number {
