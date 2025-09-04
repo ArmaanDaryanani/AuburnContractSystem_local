@@ -349,6 +349,10 @@ export default function ContractReviewSimplified() {
                 violations={violations}
                 onAnalyze={analyzeContract}
                 isAnalyzing={isAnalyzing}
+                onTextExtracted={(text) => {
+                  console.log('📄 Text extracted from DOCX, updating contract text');
+                  setContractText(text);
+                }}
               />
             )}
           </div>

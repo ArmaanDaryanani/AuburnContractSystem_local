@@ -14,6 +14,7 @@ interface DocxViewerPaginatedProps {
   showSinglePage: boolean;
   onPageChange: (page: number) => void;
   onTotalPagesChange: (total: number) => void;
+  onTextExtracted?: (text: string) => void;
 }
 
 export function DocxViewerPaginated({
@@ -23,7 +24,8 @@ export function DocxViewerPaginated({
   currentPage,
   showSinglePage,
   onPageChange,
-  onTotalPagesChange
+  onTotalPagesChange,
+  onTextExtracted
 }: DocxViewerPaginatedProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +61,17 @@ export function DocxViewerPaginated({
             const result = await mammoth.convertToHtml({
               arrayBuffer: arrayBuffer
             });
+            
+            // Also extract plain text for analysis
+            const textResult = await mammoth.extractRawText({
+              arrayBuffer: arrayBuffer
+            });
+            
+            // Pass extracted text to parent for analysis
+            if (onTextExtracted && textResult.value) {
+              console.log('Extracted text for analysis, length:', textResult.value.length);
+              onTextExtracted(textResult.value);
+            }
             
             console.log('Conversion complete, splitting into pages...');
             

@@ -61,13 +61,15 @@ interface DocumentViewerPaginatedProps {
   violations: ViolationDetail[];
   onAnalyze?: () => void;
   isAnalyzing?: boolean;
+  onTextExtracted?: (text: string) => void;
 }
 
 export function DocumentViewerPaginated({
   file,
   violations,
   onAnalyze,
-  isAnalyzing
+  isAnalyzing,
+  onTextExtracted
 }: DocumentViewerPaginatedProps) {
   const [documentType, setDocumentType] = useState<DocumentType>(DocumentType.UNKNOWN);
   const [zoom, setZoom] = useState(100);
@@ -268,6 +270,7 @@ export function DocumentViewerPaginated({
                 showSinglePage={showSinglePage}
                 onPageChange={setCurrentPage}
                 onTotalPagesChange={setTotalPages}
+                onTextExtracted={onTextExtracted}
               />
             )}
             {documentType === DocumentType.PDF && (
