@@ -39,6 +39,10 @@ export function DocxViewerPaginated({
         const modal = document.getElementById('violation-modal');
         if (modal) {
           modal.remove();
+          // Remove active highlight class
+          document.querySelectorAll('.violation-highlight-active').forEach(el => {
+            el.classList.remove('violation-highlight-active');
+          });
         }
       }
     };
@@ -343,19 +347,45 @@ export function DocxViewerPaginated({
             span.onclick = (e) => {
               e.stopPropagation();
               
-              // Remove any existing modal
+              // Remove any existing modal and active highlights
               const existingModal = document.getElementById('violation-modal');
               if (existingModal) {
                 existingModal.remove();
               }
+              
+              // Remove active class from all highlights
+              document.querySelectorAll('.violation-highlight-active').forEach(el => {
+                el.classList.remove('violation-highlight-active');
+              });
+              
+              // Add active class to clicked highlight
+              span.classList.add('violation-highlight-active');
+              
+              // Get position for the connection line
+              const rect = span.getBoundingClientRect();
+              const centerX = rect.left + rect.width / 2;
+              const centerY = rect.top + rect.height / 2;
               
               // Create modal overlay
               const modal = document.createElement('div');
               modal.id = 'violation-modal';
               modal.className = 'violation-modal-overlay';
               modal.innerHTML = `
+                <svg class="violation-connection-line" width="100%" height="100%" style="position: absolute; top: 0; left: 0; pointer-events: none;">
+                  <line 
+                    x1="${centerX}" 
+                    y1="${centerY}" 
+                    x2="50%" 
+                    y2="50%" 
+                    stroke="rgba(59, 130, 246, 0.4)" 
+                    stroke-width="2" 
+                    stroke-dasharray="5,5"
+                    class="violation-line-animation"
+                  />
+                  <circle cx="${centerX}" cy="${centerY}" r="8" fill="rgba(59, 130, 246, 0.6)" class="violation-pulse"/>
+                </svg>
                 <div class="violation-modal-content">
-                  <button class="violation-modal-close" onclick="document.getElementById('violation-modal').remove()">×</button>
+                  <button class="violation-modal-close">×</button>
                   <div class="violation-modal-header">
                     <span class="violation-type">${violation.type}</span>
                     <span class="violation-severity severity-${violation.severity?.toLowerCase()}">${violation.severity}</span>
@@ -372,10 +402,20 @@ export function DocxViewerPaginated({
               
               document.body.appendChild(modal);
               
+              // Add close button handler
+              const closeBtn = modal.querySelector('.violation-modal-close');
+              if (closeBtn) {
+                closeBtn.addEventListener('click', () => {
+                  modal.remove();
+                  span.classList.remove('violation-highlight-active');
+                });
+              }
+              
               // Close on overlay click
               modal.onclick = (e) => {
                 if (e.target === modal) {
                   modal.remove();
+                  span.classList.remove('violation-highlight-active');
                 }
               };
             };
@@ -582,6 +622,46 @@ export function DocxViewerPaginated({
           position: relative;
           display: inline;
           cursor: pointer;
+        }
+        
+        .violation-highlight-active .highlighted-text {
+          background-color: rgba(59, 130, 246, 0.4) !important;
+          border-bottom: 3px solid #3b82f6 !important;
+          animation: highlightPulse 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes highlightPulse {
+          0%, 100% { 
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+          }
+          50% { 
+            box-shadow: 0 0 20px 10px rgba(59, 130, 246, 0.2);
+          }
+        }
+        
+        .violation-line-animation {
+          animation: dashAnimation 20s linear infinite;
+        }
+        
+        @keyframes dashAnimation {
+          to {
+            stroke-dashoffset: -100;
+          }
+        }
+        
+        .violation-pulse {
+          animation: pulseCircle 1.5s ease-in-out infinite;
+        }
+        
+        @keyframes pulseCircle {
+          0%, 100% {
+            r: 8;
+            opacity: 0.6;
+          }
+          50% {
+            r: 12;
+            opacity: 0.3;
+          }
         }
         
         /* Modal Overlay Styles */
