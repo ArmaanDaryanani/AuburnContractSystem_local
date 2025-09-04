@@ -16,7 +16,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { ContractAnalyzer, type ViolationDetail } from "@/lib/contract-analysis";
-import { DocumentViewer } from "@/components/document-viewer";
+import { DocumentViewerSingleColumn } from "@/components/document-viewer-single-column";
 import { extractTextFromFile } from "@/lib/document-extractor";
 import { detectDocumentType } from "@/lib/document-utils";
 
@@ -279,8 +279,8 @@ export default function ContractReviewSimplified() {
           </div>
         )}
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Left: Upload and Document Display */}
+        <div className="max-w-5xl mx-auto">
+          {/* Document Display */}
           <div className="space-y-4">
             {!file ? (
               <Card>
@@ -336,118 +336,12 @@ export default function ContractReviewSimplified() {
                 </CardContent>
               </Card>
             ) : (
-              <DocumentViewer
+              <DocumentViewerSingleColumn
                 file={file}
                 violations={violations}
-                selectedViolationId={selectedViolationId}
-                onViolationClick={handleViolationClick}
+                onAnalyze={analyzeContract}
+                isAnalyzing={isAnalyzing}
               />
-            )}
-          </div>
-
-          {/* Right: Violations List */}
-          <div>
-            <Card className="h-full">
-              <CardContent className="p-6">
-                {!hasAnalyzed ? (
-                  <div className="flex flex-col items-center justify-center h-[400px] text-center">
-                    <FileText className="h-12 w-12 text-gray-400 mb-4" />
-                    <p className="text-gray-600 mb-2">No analysis yet</p>
-                    <p className="text-sm text-gray-500">
-                      Upload a contract and click "Analyze Contract" to check for compliance issues
-                    </p>
-                  </div>
-                ) : violations.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-[400px] text-center">
-                    <CheckCircle className="h-12 w-12 text-green-500 mb-4" />
-                    <p className="text-lg font-medium text-gray-900 mb-2">
-                      Contract Approved!
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      No compliance issues found. This contract meets all requirements.
-                    </p>
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="text-lg font-medium mb-4">
-                      Compliance Issues ({violations.length})
-                    </h3>
-                    <div className="space-y-3 max-h-[600px] overflow-y-auto">
-                      {violations.map((violation, index) => (
-                        <div
-                          key={violation.id}
-                          id={`violation-${violation.id}`}
-                          className={`p-4 border rounded-lg cursor-pointer transition-all ${
-                            selectedViolationId === violation.id
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => handleViolationClick(violation.id)}
-                        >
-                          <div className="flex items-start justify-between mb-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium">
-                                {index + 1}. {violation.type}
-                              </span>
-                              <Badge
-                                variant={
-                                  violation.severity === 'CRITICAL' ? 'destructive' :
-                                  violation.severity === 'HIGH' ? 'secondary' :
-                                  'outline'
-                                }
-                                className="text-xs"
-                              >
-                                {violation.severity}
-                              </Badge>
-                            </div>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            {violation.description}
-                          </p>
-                          <div className="bg-green-50 border border-green-200 rounded p-2">
-                            <p className="text-xs text-green-800">
-                              <strong>Recommendation:</strong> {violation.suggestion}
-                            </p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {file && !hasAnalyzed && (
-              <div className="mt-4 flex justify-between items-center">
-                <Button
-                  onClick={analyzeContract}
-                  disabled={!contractText || isAnalyzing}
-                  className="flex-1 mr-2"
-                >
-                  {isAnalyzing ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Analyze Contract
-                    </>
-                  )}
-                </Button>
-                <Button
-                  onClick={() => {
-                    setFile(null);
-                    setContractText("");
-                    setViolations([]);
-                    setHasAnalyzed(false);
-                  }}
-                  variant="outline"
-                >
-                  Clear
-                </Button>
-              </div>
             )}
           </div>
         </div>
