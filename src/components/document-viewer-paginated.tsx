@@ -6,8 +6,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   FileText, 
-  AlertCircle, 
-  Shield,
   ZoomIn,
   ZoomOut,
   RotateCw,
@@ -16,12 +14,11 @@ import {
   ChevronsLeft,
   ChevronsRight,
   BookOpen,
-  Sparkles,
-  Eye,
-  FileX
+  Sparkles
 } from "lucide-react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { detectDocumentType, DocumentType } from "@/lib/document-utils";
+import { ViolationsBar } from "@/components/violations-bar";
 import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 
@@ -97,6 +94,23 @@ export function DocumentViewerPaginated({
     } else {
       setCurrentPage(totalPages % 2 === 0 ? totalPages - 1 : totalPages);
     }
+  };
+
+  const handleViolationClick = (violation: ViolationDetail, index: number) => {
+    console.log('Violation clicked:', violation);
+    // For now, just go to page 1 where the violation might be
+    // TODO: Calculate actual page number based on violation location
+    setCurrentPage(1);
+    
+    // Try to scroll to and highlight the violation
+    setTimeout(() => {
+      const violationElements = document.querySelectorAll('.violation-highlight-container');
+      if (violationElements[index]) {
+        violationElements[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Trigger click to show popover
+        (violationElements[index] as HTMLElement).click();
+      }
+    }, 500);
   };
   
   const handlePreviousPage = () => {
@@ -230,37 +244,20 @@ export function DocumentViewerPaginated({
         </div>
 
         {/* Violations summary bar */}
-        {violations.length > 0 && (
-          <div className="flex items-center gap-3 mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
-            <Shield className="h-5 w-5 text-amber-600" />
-            <span className="text-sm font-medium text-gray-900">
-              {violations.length} compliance {violations.length === 1 ? 'issue' : 'issues'} found
-            </span>
-            <div className="flex gap-2 ml-auto">
-              {violations.filter(v => v.severity === 'CRITICAL').length > 0 && (
-                <Badge variant="destructive" className="text-xs">
-                  {violations.filter(v => v.severity === 'CRITICAL').length} Critical
-                </Badge>
-              )}
-              {violations.filter(v => v.severity === 'HIGH').length > 0 && (
-                <Badge className="bg-orange-500 text-white text-xs">
-                  {violations.filter(v => v.severity === 'HIGH').length} High
-                </Badge>
-              )}
-              {violations.filter(v => v.severity === 'MEDIUM').length > 0 && (
-                <Badge className="bg-yellow-500 text-white text-xs">
-                  {violations.filter(v => v.severity === 'MEDIUM').length} Medium
-                </Badge>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* Violations Bar */}
+      {violations.length > 0 && (
+        <ViolationsBar 
+          violations={violations}
+          onViolationClick={handleViolationClick}
+        />
+      )}
 
       {/* Document viewer with pagination */}
       <CardContent className="p-0 relative h-full">
         <div ref={viewerRef} className="document-viewer-paginated h-full">
-          <div className="bg-gray-100" style={{ height: 'calc(100vh - 140px)' }}>
+          <div className="bg-gray-100" style={{ height: violations.length > 0 ? 'calc(100vh - 200px)' : 'calc(100vh - 140px)' }}>
             {documentType === DocumentType.DOCX && (
               <DOCXViewerPaginated
                 file={file}

@@ -159,9 +159,10 @@ export function DocxViewerPaginated({
 
   // Re-apply highlights when violations change
   useEffect(() => {
+    console.log('Violations effect triggered. Pages:', pages.length, 'Violations:', violations.length);
     if (pages.length > 0 && violations.length > 0) {
-      console.log('Violations changed, re-applying highlights:', violations.length);
-      setTimeout(() => applyViolationHighlights(), 200);
+      console.log('Violations changed, re-applying highlights:', violations);
+      setTimeout(() => applyViolationHighlights(), 500);
     }
   }, [violations, pages, currentPage]);
 
@@ -174,6 +175,18 @@ export function DocxViewerPaginated({
       // Try to find text to highlight - use clause, problematicText, or description keywords
       let searchTexts = [];
       
+      // Check what fields are available
+      console.log('Violation fields:', {
+        type: violation.type,
+        clause: violation.clause,
+        problematicText: (violation as any).problematicText,
+        description: violation.description?.substring(0, 50)
+      });
+      
+      if ((violation as any).problematicText) {
+        searchTexts.push((violation as any).problematicText);
+      }
+      
       if (violation.clause && violation.clause.length > 10) {
         searchTexts.push(violation.clause.substring(0, 100));
       }
@@ -183,6 +196,8 @@ export function DocxViewerPaginated({
         searchTexts.push('ten (10) business days');
         searchTexts.push('payment terms');
         searchTexts.push('receiving payment from');
+        searchTexts.push('Company's payment terms');
+        searchTexts.push('10) business days of receiving payment');
       }
       if (violation.type?.toLowerCase().includes('indemnif')) {
         searchTexts.push('indemnify');
