@@ -15,13 +15,13 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
   const getSeverityIcon = (severity: string) => {
     switch (severity?.toUpperCase()) {
       case 'CRITICAL':
-        return <XCircle className="h-4 w-4" />;
+        return <XCircle className="h-3.5 w-3.5" />;
       case 'HIGH':
-        return <AlertCircle className="h-4 w-4" />;
+        return <AlertCircle className="h-3.5 w-3.5" />;
       case 'MEDIUM':
-        return <AlertTriangle className="h-4 w-4" />;
+        return <AlertTriangle className="h-3.5 w-3.5" />;
       default:
-        return <Info className="h-4 w-4" />;
+        return <Info className="h-3.5 w-3.5" />;
     }
   };
 
@@ -51,13 +51,13 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
 
   return (
     <div className={cn("bg-white border-b border-gray-200", className)}>
-      <div className="px-4 py-2">
+      <div className="px-4 py-1">
         {/* Minimal Summary Header */}
-        <div className="flex items-center gap-3 mb-2">
-          <span className="text-sm font-medium text-gray-900">
-            {violations.length} compliance issues found
+        <div className="flex items-center gap-3 mb-1">
+          <span className="text-xs font-medium text-gray-900">
+            {violations.length} issues
           </span>
-          <div className="flex items-center gap-1.5 text-xs">
+          <div className="flex items-center gap-1 text-xs">
             {violationCounts.CRITICAL && (
               <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded">
                 {violationCounts.CRITICAL} Critical
@@ -82,14 +82,14 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
         </div>
 
         {/* Minimal Horizontal Scrolling Cards */}
-        <div className="overflow-x-auto pb-1">
+        <div className="overflow-x-auto">
           <div className="flex gap-2">
             {violations.map((violation, index) => (
               <button
                 key={violation.id || index}
                 onClick={() => onViolationClick(violation, index)}
                 className={cn(
-                  "flex-shrink-0 w-[180px] h-[60px] px-2.5 py-2 rounded-md border",
+                  "flex-shrink-0 w-[180px] h-[36px] px-2.5 py-1.5 rounded-md border",
                   getSeverityColor(violation.severity || 'MEDIUM'),
                   "cursor-pointer"
                 )}
@@ -97,11 +97,8 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
                 <div className="flex items-center gap-2 h-full">
                   {getSeverityIcon(violation.severity || 'MEDIUM')}
                   <div className="flex-1 text-left overflow-hidden">
-                    <div className="font-medium text-xs truncate">
-                      {violation.type || `Issue ${index + 1}`}
-                    </div>
-                    <div className="text-xs opacity-75 truncate">
-                      {violation.description?.substring(0, 40)}...
+                    <div className="text-xs truncate">
+                      {violation.description?.substring(0, 50)}...
                     </div>
                   </div>
                 </div>

@@ -99,19 +99,33 @@ export function DocumentViewerPaginated({
 
   const handleViolationClick = (violation: ViolationDetail, index: number) => {
     console.log('Violation clicked:', violation);
-    // For now, just go to page 1 where the violation might be
-    // TODO: Calculate actual page number based on violation location
-    setCurrentPage(1);
     
-    // Try to scroll to and highlight the violation
+    // Search for the violation text across all pages
+    const searchText = (violation as any).problematicText || violation.description || '';
+    
+    // Try each page to find where this violation appears
+    let targetPage = 1;
+    for (let page = 1; page <= totalPages; page++) {
+      // Check if we need to search this page
+      // For now, distribute violations across pages roughly
+      const violationsPerPage = Math.ceil(violations.length / Math.max(1, totalPages));
+      targetPage = Math.min(Math.max(1, Math.floor(index / violationsPerPage) + 1), totalPages);
+    }
+    
+    // Navigate to the target page
+    setCurrentPage(targetPage);
+    
+    // After page loads, highlight the specific violation
     setTimeout(() => {
       const violationElements = document.querySelectorAll('.violation-highlight-container');
-      if (violationElements[index]) {
-        violationElements[index].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Trigger click to show popover
-        (violationElements[index] as HTMLElement).click();
-      }
-    }, 500);
+      // Find the actual highlighted element with matching text
+      Array.from(violationElements).forEach((el) => {
+        if (el.textContent?.includes(searchText.substring(0, 20))) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          (el as HTMLElement).click();
+        }
+      });
+    }, 800);
   };
   
   const handlePreviousPage = () => {
