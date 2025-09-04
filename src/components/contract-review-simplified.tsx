@@ -16,7 +16,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { ContractAnalyzer, type ViolationDetail } from "@/lib/contract-analysis";
-import { DocumentViewerSingleColumn } from "@/components/document-viewer-single-column";
+import { DocumentViewerPaginated } from "@/components/document-viewer-paginated";
 import { extractTextFromFile } from "@/lib/document-extractor";
 import { detectDocumentType } from "@/lib/document-utils";
 
@@ -336,7 +336,7 @@ export default function ContractReviewSimplified() {
                 </CardContent>
               </Card>
             ) : (
-              <DocumentViewerSingleColumn
+              <DocumentViewerPaginated
                 file={file}
                 violations={violations}
                 onAnalyze={analyzeContract}
