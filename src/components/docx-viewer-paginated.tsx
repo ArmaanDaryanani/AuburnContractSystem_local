@@ -70,7 +70,7 @@ export function DocxViewerPaginated({
             
             // Extract paragraphs and group them into pages
             const elements = Array.from(tempDiv.children);
-            const pageHeight = 500; // Increased height for larger viewport
+            const pageHeight = 700; // More content per page for standard dimensions
             const pageElements: string[][] = [];
             let currentPageElements: string[] = [];
             let currentHeight = 0;
@@ -270,12 +270,11 @@ export function DocxViewerPaginated({
       <style jsx global>{`
         .docx-page-wrapper {
           display: flex;
-          gap: 20px;
-          padding: 20px;
+          gap: 24px;
+          padding: 40px 20px 20px 20px;
           justify-content: center;
-          align-items: center;
-          height: calc(100vh - 200px);
-          max-height: 700px;
+          align-items: stretch;
+          height: calc(100vh - 160px);
           overflow: hidden;
         }
         
@@ -286,17 +285,21 @@ export function DocxViewerPaginated({
           overflow-y: auto;
           overflow-x: hidden;
           transition: all 0.3s ease;
-          height: 100%;
-          max-height: 650px;
+          display: flex;
+          flex-direction: column;
         }
         
         .docx-page-single {
-          width: 700px;
+          width: 850px;
           max-width: 90%;
+          aspect-ratio: 8.5 / 11;
+          max-height: calc(100vh - 200px);
         }
         
         .docx-page-spread {
-          width: 340px;
+          width: 420px;
+          aspect-ratio: 8.5 / 11;
+          max-height: calc(100vh - 200px);
         }
         
         .docx-page-content {
