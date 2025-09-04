@@ -302,7 +302,17 @@ export function DocxViewerPaginated({
       const walker = document.createTreeWalker(
         viewerRef.current!,
         NodeFilter.SHOW_TEXT,
-        null
+        {
+          acceptNode: (node) => {
+            // Skip text nodes inside violation popovers
+            const parent = node.parentElement;
+            if (parent?.closest('.violation-popover-content') || 
+                parent?.closest('.violation-popover')) {
+              return NodeFilter.FILTER_REJECT;
+            }
+            return NodeFilter.FILTER_ACCEPT;
+          }
+        }
       );
 
       let node;
@@ -598,11 +608,21 @@ export function DocxViewerPaginated({
         }
         
         .violation-popover-content {
-          background: white;
+          background: white !important;
           border-radius: 8px;
           box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15), 0 4px 10px rgba(0, 0, 0, 0.05);
           border: 1px solid #e5e7eb;
           padding: 16px;
+        }
+        
+        .violation-popover-content * {
+          background: transparent !important;
+        }
+        
+        .violation-popover-content .highlighted-text {
+          background: transparent !important;
+          border-bottom: none !important;
+          padding: 0 !important;
         }
         
         .violation-header {
