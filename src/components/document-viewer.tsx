@@ -22,9 +22,9 @@ import { detectDocumentType, DocumentType } from "@/lib/document-utils";
 import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 
-// Dynamic imports for document viewers
+// Dynamic imports for document viewers  
 const DOCXViewer = dynamic(
-  () => import('./simple-docx-viewer').then(mod => mod.SimpleDocxViewer),
+  () => import('./docx-viewer-working').then(mod => mod.DocxViewerWorking),
   { 
     ssr: false,
     loading: () => (

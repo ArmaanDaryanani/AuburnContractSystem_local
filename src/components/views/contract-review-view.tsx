@@ -52,7 +52,7 @@ const ContractDocumentInlinePDF = dynamic(
 
 // Dynamically import DOCX viewer to avoid SSR issues
 const ContractDocumentInlineDOCX = dynamic(
-  () => import("@/components/contract-document-inline-docx").then(mod => mod.ContractDocumentInlineDOCX),
+  () => import("@/components/document-viewer").then(mod => mod.DocumentViewer),
   { 
     ssr: false,
     loading: () => (

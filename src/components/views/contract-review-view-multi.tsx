@@ -57,7 +57,7 @@ const ContractDocumentInlinePDF = dynamic(
 
 // Dynamically import DOCX viewer to avoid SSR issues
 const ContractDocumentInlineDOCX = dynamic(
-  () => import("@/components/contract-document-inline-docx").then(mod => mod.ContractDocumentInlineDOCX),
+  () => import("@/components/document-viewer").then(mod => mod.DocumentViewer),
   { 
     ssr: false,
     loading: () => (
@@ -420,6 +420,8 @@ export default function ContractReviewViewMulti() {
                     file={doc.file}
                     violations={doc.violations.map(v => ({
                       ...v,
+                      clause: v.problematicText || v.description || '',
+                      location: v.location || '',
                       severity: (v.severity?.toUpperCase() || 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
                     }))}
                     selectedViolationId={state.selectedViolationId}
@@ -431,6 +433,8 @@ export default function ContractReviewViewMulti() {
                     htmlContent={doc.htmlContent || doc.content}
                     violations={doc.violations.map(v => ({
                       ...v,
+                      clause: v.problematicText || v.description || '',
+                      location: v.location || '',
                       severity: (v.severity?.toUpperCase() || 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
                     }))}
                     selectedViolationId={state.selectedViolationId}
@@ -441,6 +445,8 @@ export default function ContractReviewViewMulti() {
                     contractText={doc.content}
                     violations={doc.violations.map(v => ({
                       ...v,
+                      clause: v.problematicText || v.description || '',
+                      location: v.location || '',
                       severity: (v.severity?.toUpperCase() || 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW'
                     }))}
                     selectedViolationId={state.selectedViolationId}
