@@ -258,7 +258,7 @@ export function DocumentViewerPaginated({
       {/* Document viewer with pagination */}
       <CardContent className="p-0 relative">
         <div ref={viewerRef} className="document-viewer-paginated">
-          <div className="bg-gray-100" style={{ minHeight: '750px' }}>
+          <div className="bg-gray-100" style={{ height: 'calc(100vh - 280px)', maxHeight: '650px', minHeight: '500px' }}>
             {documentType === DocumentType.DOCX && (
               <DOCXViewerPaginated
                 file={file}

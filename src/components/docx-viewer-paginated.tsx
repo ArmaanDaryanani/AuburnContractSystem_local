@@ -70,14 +70,24 @@ export function DocxViewerPaginated({
             
             // Extract paragraphs and group them into pages
             const elements = Array.from(tempDiv.children);
-            const pageHeight = 1000; // Approximate height in pixels
+            const pageHeight = 400; // Smaller height for viewport-sized pages
             const pageElements: string[][] = [];
             let currentPageElements: string[] = [];
             let currentHeight = 0;
             
             elements.forEach(element => {
               const elementHtml = element.outerHTML;
-              const estimatedHeight = element.textContent?.length ? element.textContent.length * 0.5 : 50;
+              // Better height estimation based on element type
+              let estimatedHeight = 50; // default
+              if (element.tagName === 'P') {
+                estimatedHeight = Math.max(30, (element.textContent?.length || 0) * 0.4);
+              } else if (element.tagName.match(/^H[1-3]$/)) {
+                estimatedHeight = 60;
+              } else if (element.tagName === 'TABLE') {
+                estimatedHeight = 200;
+              } else if (element.tagName === 'UL' || element.tagName === 'OL') {
+                estimatedHeight = 40 * (element.children.length || 1);
+              }
               
               if (currentHeight + estimatedHeight > pageHeight && currentPageElements.length > 0) {
                 pageElements.push([...currentPageElements]);
@@ -218,7 +228,7 @@ export function DocxViewerPaginated({
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-[750px] bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg" style={{ minHeight: '500px' }}>
         <div className="text-center">
           <Loader2 className="h-8 w-8 animate-spin text-gray-600 mx-auto mb-3" />
           <p className="text-sm text-gray-600">Converting document...</p>
@@ -230,7 +240,7 @@ export function DocxViewerPaginated({
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-[750px] bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg" style={{ minHeight: '500px' }}>
         <div className="text-center">
           <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
           <p className="text-sm font-medium text-gray-900 mb-1">Unable to display document</p>
@@ -242,7 +252,7 @@ export function DocxViewerPaginated({
 
   if (pages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[750px] bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-center h-full bg-gray-50 rounded-lg" style={{ minHeight: '500px' }}>
         <div className="text-center">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
           <p className="text-sm text-gray-600">No content to display</p>
@@ -263,33 +273,38 @@ export function DocxViewerPaginated({
           gap: 20px;
           padding: 20px;
           justify-content: center;
-          align-items: flex-start;
-          min-height: 750px;
+          align-items: center;
+          height: calc(100vh - 280px);
+          max-height: 600px;
+          overflow: hidden;
         }
         
         .docx-page {
           background: white;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
           border-radius: 4px;
-          overflow: hidden;
+          overflow-y: auto;
+          overflow-x: hidden;
           transition: all 0.3s ease;
+          height: 100%;
+          max-height: 550px;
         }
         
         .docx-page-single {
-          width: 816px;
+          width: 700px;
           max-width: 90%;
         }
         
         .docx-page-spread {
-          width: 400px;
+          width: 340px;
         }
         
         .docx-page-content {
-          padding: 60px;
+          padding: 40px;
           font-family: 'Times New Roman', Georgia, serif;
-          line-height: 1.8;
+          line-height: 1.6;
           color: #000;
-          min-height: 650px;
+          font-size: 14px;
         }
         
         .docx-page-content p {
