@@ -58,8 +58,8 @@ export function SimpleDocxViewer({
           // Convert plain text to HTML with paragraphs
           const paragraphs = result.text
             .split(/\n\n+/)
-            .filter(p => p.trim())
-            .map(p => {
+            .filter((p: string) => p.trim())
+            .map((p: string) => {
               // Check if it looks like a heading (all caps or starts with number)
               if (p.match(/^[A-Z\s]+$/) || p.match(/^\d+\./)) {
                 return `<h3>${p}</h3>`;
