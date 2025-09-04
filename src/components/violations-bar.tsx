@@ -12,6 +12,19 @@ interface ViolationsBarProps {
 }
 
 export function ViolationsBar({ violations, onViolationClick, className }: ViolationsBarProps) {
+  // Remove duplicate violations based on description similarity
+  const uniqueViolations = violations.reduce((acc, violation) => {
+    const isDuplicate = acc.some(v => 
+      v.description?.substring(0, 30) === violation.description?.substring(0, 30) ||
+      (v.type === violation.type && v.severity === violation.severity && 
+       v.description?.substring(0, 20) === violation.description?.substring(0, 20))
+    );
+    if (!isDuplicate) {
+      acc.push(violation);
+    }
+    return acc;
+  }, [] as ViolationDetail[]);
+  
   const getSeverityIcon = (severity: string) => {
     switch (severity?.toUpperCase()) {
       case 'CRITICAL':
@@ -39,13 +52,13 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
   };
 
   // Group violations by severity for summary
-  const violationCounts = violations.reduce((acc, v) => {
+  const violationCounts = uniqueViolations.reduce((acc, v) => {
     const severity = v.severity?.toUpperCase() || 'LOW';
     acc[severity] = (acc[severity] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
-  if (violations.length === 0) {
+  if (uniqueViolations.length === 0) {
     return null;
   }
 
@@ -55,7 +68,7 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
         {/* Minimal Summary Header */}
         <div className="flex items-center gap-3 mb-1">
           <span className="text-xs font-medium text-gray-900">
-            {violations.length} issues
+            {uniqueViolations.length} issues
           </span>
           <div className="flex items-center gap-1 text-xs">
             {violationCounts.CRITICAL && (
@@ -84,12 +97,12 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
         {/* Minimal Horizontal Scrolling Cards */}
         <div className="overflow-x-auto">
           <div className="flex gap-2">
-            {violations.map((violation, index) => (
+            {uniqueViolations.map((violation, index) => (
               <button
                 key={violation.id || index}
                 onClick={() => onViolationClick(violation, index)}
                 className={cn(
-                  "flex-shrink-0 w-[180px] h-[36px] px-2.5 py-1.5 rounded-md border",
+                  "flex-shrink-0 w-[220px] h-[40px] px-2.5 py-1.5 rounded-md border",
                   getSeverityColor(violation.severity || 'MEDIUM'),
                   "cursor-pointer"
                 )}

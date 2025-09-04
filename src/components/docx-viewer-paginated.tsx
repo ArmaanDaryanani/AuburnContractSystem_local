@@ -211,19 +211,29 @@ export function DocxViewerPaginated({
       }
     });
     
+    // Track which violations have been highlighted to avoid duplicates
+    const highlightedViolations = new Set<string>();
+    
     violations.forEach(violation => {
+      // Skip if already highlighted
+      if (highlightedViolations.has(violation.id || violation.type || '')) {
+        return;
+      }
+      
       // Try to find text to highlight - use clause, problematicText, or description keywords
       let searchTexts = [];
       
       // Check what fields are available
-      console.log('Looking for violation:', violation.type, 'on page', currentPage);
+      console.log('Looking for violation:', violation.type, violation.severity, 'on page', currentPage);
       
       if ((violation as any).problematicText) {
-        searchTexts.push((violation as any).problematicText);
+        // Use only the first 50 chars to avoid partial matches
+        const text = (violation as any).problematicText;
+        searchTexts.push(text.substring(0, Math.min(50, text.length)));
       }
       
       if (violation.clause && violation.clause.length > 10) {
-        searchTexts.push(violation.clause.substring(0, 100));
+        searchTexts.push(violation.clause.substring(0, 50));
       }
       
       // Add specific keywords based on violation type and description
@@ -258,6 +268,23 @@ export function DocxViewerPaginated({
         searchTexts.push('Article IX');
         searchTexts.push('ARTICLE IX');
         searchTexts.push('ARTICLE');
+      }
+      // For medium/low severity - look for more generic terms
+      if (violation.severity?.toLowerCase() === 'medium' || violation.severity?.toLowerCase() === 'low') {
+        if (violation.description?.toLowerCase().includes('incorporate')) {
+          searchTexts.push('incorporate');
+          searchTexts.push('FAR');
+          searchTexts.push('flowdown');
+        }
+        if (violation.description?.toLowerCase().includes('personnel')) {
+          searchTexts.push('key subcontractor personnel');
+          searchTexts.push('personnel');
+        }
+        // Extract key phrases from description
+        const descWords = violation.description?.split(' ').slice(0, 5).join(' ');
+        if (descWords) {
+          searchTexts.push(descWords);
+        }
       }
 
       const walker = document.createTreeWalker(
@@ -335,6 +362,8 @@ export function DocxViewerPaginated({
             
             parent.removeChild(node);
             found = true;
+            // Mark this violation as highlighted to avoid duplicates
+            highlightedViolations.add(violation.id || violation.type || '');
             break; // Exit the search loop once found
           }
         }
@@ -505,6 +534,12 @@ export function DocxViewerPaginated({
         .highlighted-text.violation-medium {
           background-color: rgba(250, 204, 21, 0.25);
           border-bottom-color: #f59e0b;
+        }
+        
+        .violation-low .highlighted-text,
+        .highlighted-text.violation-low {
+          background-color: rgba(59, 130, 246, 0.2);
+          border-bottom-color: #3b82f6;
         }
         
         .violation-highlight-container {
