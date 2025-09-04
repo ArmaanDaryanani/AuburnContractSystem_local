@@ -1,7 +1,7 @@
 // XLSX Document Ingestion for Auburn Contract Review System
 import { createClient } from '@supabase/supabase-js';
 import { parseXLSXFile, AuburnXLSXProcessor, EmbeddingChunk } from '@/lib/documents/xlsx-parser';
-import { generateEmbedding } from './embeddings';
+import { generateEmbedding } from './document-ingestion';
 import { v4 as uuidv4 } from 'uuid';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
