@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 
 // Dynamic imports for document viewers
 const DOCXViewer = dynamic(
-  () => import('./docx-preview-component').then(mod => mod.DOCXPreviewComponent),
+  () => import('./simple-docx-viewer').then(mod => mod.SimpleDocxViewer),
   { 
     ssr: false,
     loading: () => (
