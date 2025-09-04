@@ -95,14 +95,14 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
         </div>
 
         {/* Minimal Horizontal Scrolling Cards */}
-        <div className="overflow-x-auto pb-1">
-          <div className="flex gap-2 justify-center px-2">
+        <div className="overflow-x-auto pb-1 mx-2">
+          <div className="flex gap-2 justify-start">
             {uniqueViolationsWithIndex.map((item, idx) => (
               <button
                 key={item.violation.id || `${item.violation.type}_${idx}`}
                 onClick={() => onViolationClick(item.violation, item.originalIndex)}
                 className={cn(
-                  "flex-shrink-0 w-[220px] h-[40px] px-2.5 py-1.5 rounded-md border",
+                  "flex-shrink-0 min-w-[200px] max-w-[200px] h-[40px] px-2 py-1.5 rounded-md border",
                   getSeverityColor(item.violation.severity || 'MEDIUM'),
                   "cursor-pointer"
                 )}
@@ -111,7 +111,7 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
                   {getSeverityIcon(item.violation.severity || 'MEDIUM')}
                   <div className="flex-1 text-left overflow-hidden">
                     <div className="text-xs truncate">
-                      {item.violation.description?.substring(0, 50)}...
+                      {item.violation.description?.substring(0, 45)}...
                     </div>
                   </div>
                 </div>
@@ -124,17 +124,16 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
       <style jsx>{`
         /* Custom scrollbar styling */
         .overflow-x-auto::-webkit-scrollbar {
-          height: 6px;
+          height: 4px;
         }
         
         .overflow-x-auto::-webkit-scrollbar-track {
-          background: #f3f4f6;
-          border-radius: 3px;
+          background: transparent;
         }
         
         .overflow-x-auto::-webkit-scrollbar-thumb {
           background: #d1d5db;
-          border-radius: 3px;
+          border-radius: 2px;
         }
         
         .overflow-x-auto::-webkit-scrollbar-thumb:hover {
