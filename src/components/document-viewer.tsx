@@ -24,7 +24,7 @@ import { cn } from "@/lib/utils";
 
 // Dynamic imports for document viewers  
 const DOCXViewer = dynamic(
-  () => import('./docx-viewer-working').then(mod => mod.DocxViewerWorking),
+  () => import('./docx-viewer-fixed').then(mod => mod.DocxViewerFixed),
   { 
     ssr: false,
     loading: () => (
