@@ -14,7 +14,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   BookOpen,
-  Sparkles
+  Sparkles,
+  FileX
 } from "lucide-react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { detectDocumentType, DocumentType } from "@/lib/document-utils";
