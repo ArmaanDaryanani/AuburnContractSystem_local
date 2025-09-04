@@ -3,7 +3,7 @@
 import React from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { cn } from "@/lib/utils";
-import { AlertCircle, AlertTriangle, Info, XCircle, ChevronRight } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, XCircle } from "lucide-react";
 
 interface ViolationsBarProps {
   violations: ViolationDetail[];
@@ -51,64 +51,60 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
 
   return (
     <div className={cn("bg-white border-b border-gray-200", className)}>
-      <div className="px-4 py-3">
-        {/* Summary Header */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-4">
-            <span className="font-semibold text-gray-900">
-              {violations.length} compliance issue{violations.length !== 1 ? 's' : ''} found
-            </span>
-            <div className="flex items-center gap-2 text-sm">
-              {violationCounts.CRITICAL && (
-                <span className="px-2 py-1 bg-red-100 text-red-800 rounded-full">
-                  {violationCounts.CRITICAL} Critical
-                </span>
-              )}
-              {violationCounts.HIGH && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full">
-                  {violationCounts.HIGH} High
-                </span>
-              )}
-              {violationCounts.MEDIUM && (
-                <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full">
-                  {violationCounts.MEDIUM} Medium
-                </span>
-              )}
-              {violationCounts.LOW && (
-                <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                  {violationCounts.LOW} Low
-                </span>
-              )}
-            </div>
-          </div>
-          <div className="text-sm text-gray-500">
-            Click on an issue to navigate to its location
+      <div className="px-4 py-2">
+        {/* Minimal Summary Header */}
+        <div className="flex items-center gap-3 mb-2">
+          <span className="text-sm font-medium text-gray-900">
+            {violations.length} compliance issues found
+          </span>
+          <div className="flex items-center gap-1.5 text-xs">
+            {violationCounts.CRITICAL && (
+              <span className="px-1.5 py-0.5 bg-red-100 text-red-700 rounded">
+                {violationCounts.CRITICAL} Critical
+              </span>
+            )}
+            {violationCounts.HIGH && (
+              <span className="px-1.5 py-0.5 bg-orange-100 text-orange-700 rounded">
+                {violationCounts.HIGH} High
+              </span>
+            )}
+            {violationCounts.MEDIUM && (
+              <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 rounded">
+                {violationCounts.MEDIUM} Medium
+              </span>
+            )}
+            {violationCounts.LOW && (
+              <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded">
+                {violationCounts.LOW} Low
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Horizontal Scrolling Violations */}
-        <div className="overflow-x-auto">
-          <div className="flex gap-2 pb-2">
+        {/* Minimal Horizontal Scrolling Cards */}
+        <div className="overflow-x-auto pb-1">
+          <div className="flex gap-2">
             {violations.map((violation, index) => (
               <button
                 key={violation.id || index}
                 onClick={() => onViolationClick(violation, index)}
                 className={cn(
-                  "flex-shrink-0 flex items-center gap-2 px-3 py-2 rounded-lg border transition-all",
+                  "flex-shrink-0 w-[180px] h-[60px] px-2.5 py-2 rounded-md border transition-all",
                   getSeverityColor(violation.severity || 'MEDIUM'),
-                  "cursor-pointer group"
+                  "cursor-pointer hover:shadow-sm"
                 )}
               >
-                {getSeverityIcon(violation.severity || 'MEDIUM')}
-                <div className="flex flex-col items-start text-left">
-                  <span className="font-medium text-sm whitespace-nowrap">
-                    {violation.type || `Issue ${index + 1}`}
-                  </span>
-                  <span className="text-xs opacity-75 max-w-[200px] truncate">
-                    {violation.description}
-                  </span>
+                <div className="flex items-center gap-2 h-full">
+                  {getSeverityIcon(violation.severity || 'MEDIUM')}
+                  <div className="flex-1 text-left overflow-hidden">
+                    <div className="font-medium text-xs truncate">
+                      {violation.type || `Issue ${index + 1}`}
+                    </div>
+                    <div className="text-xs opacity-75 truncate">
+                      {violation.description?.substring(0, 40)}...
+                    </div>
+                  </div>
                 </div>
-                <ChevronRight className="h-4 w-4 opacity-50 group-hover:opacity-100 transition-opacity" />
               </button>
             ))}
           </div>

@@ -251,55 +251,6 @@ export default function ContractReviewSimplified() {
           </div>
         )}
 
-        {/* Stats Bar */}
-        {hasAnalyzed && (
-          <div className="grid grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Violations</p>
-                    <p className="text-2xl font-bold">{violations.length}</p>
-                  </div>
-                  <AlertCircle className="h-8 w-8 text-orange-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Risk Score</p>
-                    <p className="text-2xl font-bold">{riskScore.toFixed(1)}/10</p>
-                  </div>
-                  <AlertTriangle className="h-8 w-8 text-yellow-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Confidence</p>
-                    <p className="text-2xl font-bold">{confidence.toFixed(0)}%</p>
-                  </div>
-                  <CheckCircle className="h-8 w-8 text-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600">Status</p>
-                    <p className="text-lg font-bold text-green-600">Complete</p>
-                  </div>
-                  <Sparkles className="h-8 w-8 text-blue-500" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         <div className={file ? "" : "max-w-5xl mx-auto"}>
           {/* Document Display */}
