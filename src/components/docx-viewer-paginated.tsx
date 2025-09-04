@@ -290,16 +290,17 @@ export function DocxViewerPaginated({
         }
         
         .docx-page-single {
-          width: 850px;
-          max-width: 90%;
-          aspect-ratio: 8.5 / 11;
-          max-height: calc(100vh - 200px);
+          width: 100%;
+          max-width: 1100px;
+          min-width: 900px;
+          height: calc(100vh - 220px);
         }
         
         .docx-page-spread {
-          width: 420px;
-          aspect-ratio: 8.5 / 11;
-          max-height: calc(100vh - 200px);
+          width: 48%;
+          max-width: 540px;
+          min-width: 450px;
+          height: calc(100vh - 220px);
         }
         
         .docx-page-content {
