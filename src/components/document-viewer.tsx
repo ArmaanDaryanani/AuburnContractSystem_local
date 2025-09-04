@@ -22,31 +22,16 @@ import { detectDocumentType, DocumentType } from "@/lib/document-utils";
 import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 
-// Dynamic imports for heavy libraries
-const PDFViewer = dynamic(
-  () => import('./pdf-viewer-component').then(mod => mod.PDFViewerComponent),
+// Dynamic import for the universal document viewer
+const UniversalDocViewer = dynamic(
+  () => import('./react-doc-viewer-component').then(mod => mod.ReactDocViewerComponent),
   { 
     ssr: false,
     loading: () => (
       <div className="flex items-center justify-center h-[600px] bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-3"></div>
-          <p className="text-sm text-gray-600">Loading PDF viewer...</p>
-        </div>
-      </div>
-    )
-  }
-);
-
-const DOCXViewer = dynamic(
-  () => import('./docx-viewer-improved').then(mod => mod.DOCXViewerImproved),
-  { 
-    ssr: false,
-    loading: () => (
-      <div className="flex items-center justify-center h-[600px] bg-gray-50 rounded-lg">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-3"></div>
-          <p className="text-sm text-gray-600">Loading DOCX viewer...</p>
+          <p className="text-sm text-gray-600">Loading document viewer...</p>
         </div>
       </div>
     )
@@ -172,17 +157,8 @@ export function DocumentViewer({
 
           <TabsContent value="document" className="m-0">
             <div className="relative" style={{ height: '600px' }}>
-              {documentType === DocumentType.PDF && (
-                <PDFViewer
-                  file={file}
-                  violations={violations}
-                  selectedViolationId={selectedViolationId}
-                  onViolationClick={onViolationClick}
-                  zoom={zoom}
-                />
-              )}
-              {documentType === DocumentType.DOCX && (
-                <DOCXViewer
+              {(documentType === DocumentType.PDF || documentType === DocumentType.DOCX) && (
+                <UniversalDocViewer
                   file={file}
                   violations={violations}
                   selectedViolationId={selectedViolationId}
