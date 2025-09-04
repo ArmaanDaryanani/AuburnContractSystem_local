@@ -42,10 +42,7 @@ export default function ContractReviewSimplified() {
       setHasAnalyzed(false);
       setViolations([]);
       
-      toast({
-        title: "Processing document...",
-        description: `Extracting text from ${file.name}`,
-      });
+      // Silent processing - no toast
       
       try {
         // For DOCX files, skip initial extraction as the paginated viewer will handle it
@@ -57,27 +54,17 @@ export default function ContractReviewSimplified() {
           const extracted = await extractTextFromFile(file);
           
           if (extracted.error) {
-            toast({
-              title: "Extraction Warning",
-              description: extracted.error,
-              variant: "default",
-            });
+            // Log warning silently
+            console.warn('Extraction warning:', extracted.error);
           }
           
           setContractText(extracted.text);
         }
         
-        toast({
-          title: "Document loaded",
-          description: `Ready to analyze ${file.name}`,
-        });
+        // Document loaded silently
       } catch (error: any) {
         console.error('Error processing file:', error);
-        toast({
-          title: "Error loading document",
-          description: error.message || "Failed to extract text from document",
-          variant: "destructive",
-        });
+        console.error('Error loading document:', error.message || "Failed to extract text from document");
       }
     }
   };
@@ -90,10 +77,7 @@ export default function ContractReviewSimplified() {
       setHasAnalyzed(false);
       setViolations([]);
       
-      toast({
-        title: "Processing document...",
-        description: `Extracting text from ${file.name}`,
-      });
+      // Silent processing - no toast
       
       try {
         // For DOCX files, skip initial extraction as the paginated viewer will handle it
@@ -105,27 +89,17 @@ export default function ContractReviewSimplified() {
           const extracted = await extractTextFromFile(file);
           
           if (extracted.error) {
-            toast({
-              title: "Extraction Warning",
-              description: extracted.error,
-              variant: "default",
-            });
+            // Log warning silently
+            console.warn('Extraction warning:', extracted.error);
           }
           
           setContractText(extracted.text);
         }
         
-        toast({
-          title: "Document loaded",
-          description: `Ready to analyze ${file.name}`,
-        });
+        // Document loaded silently
       } catch (error: any) {
         console.error('Error processing dropped file:', error);
-        toast({
-          title: "Error loading document",
-          description: error.message || "Failed to extract text from document",
-          variant: "destructive",
-        });
+        console.error('Error loading document:', error.message || "Failed to extract text from document");
       }
     }
   }, [toast]);
@@ -136,11 +110,7 @@ export default function ContractReviewSimplified() {
 
   const analyzeContract = async () => {
     if (!contractText) {
-      toast({
-        title: "No document loaded",
-        description: "Please upload a contract document first.",
-        variant: "destructive",
-      });
+      console.warn("No document loaded - Please upload a contract document first.");
       return;
     }
 
@@ -199,10 +169,8 @@ export default function ContractReviewSimplified() {
       setRiskScore(result.riskScore || 0);
       setHasAnalyzed(true);
       
-      toast({
-        title: "Analysis Complete",
-        description: `Found ${result.violations?.length || 0} compliance issues`,
-      });
+      // Analysis complete - no toast needed
+      console.log(`Analysis complete: Found ${result.violations?.length || 0} compliance issues`);
       
     } catch (error) {
       console.error('Analysis error:', error);
@@ -218,11 +186,8 @@ export default function ContractReviewSimplified() {
       setRiskScore(analysis.riskScore);
       setHasAnalyzed(true);
       
-      toast({
-        title: "Analysis Complete (Offline)",
-        description: `Found ${analysis.violations.length} compliance issues`,
-        variant: "default",
-      });
+      // Analysis complete - no toast needed
+      console.log(`Analysis complete (offline): Found ${analysis.violations.length} compliance issues`);
     } finally {
       setIsAnalyzing(false);
       setTimeout(() => setAnalysisProgress(0), 1000);

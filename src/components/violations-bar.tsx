@@ -28,13 +28,13 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
   const getSeverityColor = (severity: string) => {
     switch (severity?.toUpperCase()) {
       case 'CRITICAL':
-        return 'bg-red-100 hover:bg-red-200 text-red-800 border-red-300';
+        return 'bg-red-50 text-red-800 border-red-200';
       case 'HIGH':
-        return 'bg-orange-100 hover:bg-orange-200 text-orange-800 border-orange-300';
+        return 'bg-orange-50 text-orange-800 border-orange-200';
       case 'MEDIUM':
-        return 'bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-yellow-300';
+        return 'bg-yellow-50 text-yellow-800 border-yellow-200';
       default:
-        return 'bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-300';
+        return 'bg-blue-50 text-blue-800 border-blue-200';
     }
   };
 
@@ -89,9 +89,9 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
                 key={violation.id || index}
                 onClick={() => onViolationClick(violation, index)}
                 className={cn(
-                  "flex-shrink-0 w-[180px] h-[60px] px-2.5 py-2 rounded-md border transition-all",
+                  "flex-shrink-0 w-[180px] h-[60px] px-2.5 py-2 rounded-md border",
                   getSeverityColor(violation.severity || 'MEDIUM'),
-                  "cursor-pointer hover:shadow-sm"
+                  "cursor-pointer"
                 )}
               >
                 <div className="flex items-center gap-2 h-full">

@@ -157,20 +157,21 @@ export function DocxViewerPaginated({
     convertDocument();
   }, [file, onTotalPagesChange]);
 
-  // Re-apply highlights when violations change
+  // Re-apply highlights when violations change - optimize by only when necessary
   useEffect(() => {
-    console.log('Violations effect triggered. Pages:', pages.length, 'Violations:', violations.length);
     if (pages.length > 0 && violations.length > 0) {
-      console.log('Violations changed, re-applying highlights:', violations);
-      setTimeout(() => applyViolationHighlights(), 500);
+      // Use requestAnimationFrame for smoother rendering
+      const handle = requestAnimationFrame(() => applyViolationHighlights());
+      return () => cancelAnimationFrame(handle);
     }
-  }, [violations, pages, currentPage]);
+  }, [violations.length, pages.length]); // Only re-run when counts change, not on every page change
 
   const applyViolationHighlights = () => {
     if (!viewerRef.current || !violations.length) return;
 
-    console.log('Applying highlights to violations:', violations);
-
+    // Batch DOM operations for better performance
+    const fragment = document.createDocumentFragment();
+    
     violations.forEach(violation => {
       // Try to find text to highlight - use clause, problematicText, or description keywords
       let searchTexts = [];
@@ -290,12 +291,14 @@ export function DocxViewerPaginated({
     });
   };
 
-  // Re-apply highlights when page changes
+  // Re-apply highlights when page changes - optimized
   useEffect(() => {
-    if (pages.length > 0 && !loading) {
-      setTimeout(() => applyViolationHighlights(), 100);
+    if (pages.length > 0 && !loading && violations.length > 0) {
+      // Use requestAnimationFrame for smoother performance
+      const handle = requestAnimationFrame(() => applyViolationHighlights());
+      return () => cancelAnimationFrame(handle);
     }
-  }, [currentPage, pages, violations, loading]);
+  }, [currentPage, loading]); // Reduced dependencies
 
   if (loading) {
     return (
@@ -422,33 +425,32 @@ export function DocxViewerPaginated({
         }
         
         .highlighted-text {
-          background-color: rgba(250, 204, 21, 0.3);
+          background-color: rgba(250, 204, 21, 0.25);
           border-bottom: 2px solid #f59e0b;
           cursor: pointer;
-          padding: 2px 4px;
-          border-radius: 3px;
-          transition: all 0.2s;
+          padding: 1px 2px;
+          border-radius: 2px;
         }
         
         .highlighted-text:hover {
-          background-color: rgba(250, 204, 21, 0.5);
+          background-color: rgba(250, 204, 21, 0.35);
         }
         
         .violation-critical .highlighted-text,
         .highlighted-text.violation-critical {
-          background-color: rgba(239, 68, 68, 0.3);
+          background-color: rgba(239, 68, 68, 0.2);
           border-bottom-color: #dc2626;
         }
         
         .violation-high .highlighted-text,
         .highlighted-text.violation-high {
-          background-color: rgba(251, 146, 60, 0.3);
+          background-color: rgba(251, 146, 60, 0.2);
           border-bottom-color: #ea580c;
         }
         
         .violation-medium .highlighted-text,
         .highlighted-text.violation-medium {
-          background-color: rgba(250, 204, 21, 0.3);
+          background-color: rgba(250, 204, 21, 0.25);
           border-bottom-color: #f59e0b;
         }
         
