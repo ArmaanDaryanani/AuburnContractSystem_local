@@ -157,13 +157,43 @@ export function DocxViewerPaginated({
     convertDocument();
   }, [file, onTotalPagesChange]);
 
+  // Re-apply highlights when violations change
+  useEffect(() => {
+    if (pages.length > 0 && violations.length > 0) {
+      console.log('Violations changed, re-applying highlights:', violations.length);
+      setTimeout(() => applyViolationHighlights(), 200);
+    }
+  }, [violations, pages, currentPage]);
+
   const applyViolationHighlights = () => {
     if (!viewerRef.current || !violations.length) return;
 
-    violations.forEach(violation => {
-      if (!violation.clause || violation.clause.length < 20) return;
+    console.log('Applying highlights to violations:', violations);
 
-      const searchText = violation.clause.substring(0, 50).toLowerCase();
+    violations.forEach(violation => {
+      // Try to find text to highlight - use clause, problematicText, or description keywords
+      let searchTexts = [];
+      
+      if (violation.clause && violation.clause.length > 10) {
+        searchTexts.push(violation.clause.substring(0, 100));
+      }
+      
+      // Add specific keywords based on violation type
+      if (violation.type?.toLowerCase().includes('payment')) {
+        searchTexts.push('ten (10) business days');
+        searchTexts.push('payment terms');
+        searchTexts.push('receiving payment from');
+      }
+      if (violation.type?.toLowerCase().includes('indemnif')) {
+        searchTexts.push('indemnify');
+        searchTexts.push('indemnification');
+        searchTexts.push('hold harmless');
+      }
+      if (violation.type?.toLowerCase().includes('termination')) {
+        searchTexts.push('termination');
+        searchTexts.push('terminate');
+      }
+
       const walker = document.createTreeWalker(
         viewerRef.current!,
         NodeFilter.SHOW_TEXT,
@@ -172,15 +202,26 @@ export function DocxViewerPaginated({
 
       let node;
       let found = false;
+      
       while ((node = walker.nextNode()) && !found) {
-        const text = node.nodeValue?.toLowerCase() || '';
-        const index = text.indexOf(searchText.substring(0, 40));
+        const nodeText = node.nodeValue || '';
+        const nodeTextLower = nodeText.toLowerCase();
         
-        if (index !== -1 && node.parentElement && !node.parentElement.classList.contains('violation-highlight-container')) {
-          const span = document.createElement('span');
-          span.className = 'violation-highlight-container';
-          span.innerHTML = `
-            <span class="highlighted-text violation-${violation.severity?.toLowerCase() || 'medium'}">${node.nodeValue?.substring(index, index + Math.min(100, (node.nodeValue?.length || 0) - index))}</span>
+        for (const searchText of searchTexts) {
+          const searchLower = searchText.toLowerCase();
+          const index = nodeTextLower.indexOf(searchLower);
+        
+          if (index !== -1 && node.parentElement && !node.parentElement.classList.contains('violation-highlight-container')) {
+            console.log('Found match for violation:', violation.type, 'at:', searchText);
+            const span = document.createElement('span');
+            span.className = 'violation-highlight-container';
+            
+            // Extract the matched text
+            const matchLength = Math.min(searchLower.length, nodeText.length - index);
+            const matchedText = nodeText.substring(index, index + matchLength);
+            
+            span.innerHTML = `
+              <span class="highlighted-text violation-${violation.severity?.toLowerCase() || 'medium'}">${matchedText}</span>
             <div class="violation-popover" id="popover-${violation.id}">
               <div class="violation-popover-content">
                 <div class="violation-header">
@@ -196,37 +237,39 @@ export function DocxViewerPaginated({
             </div>
           `;
           
-          // Add click handler
-          span.onclick = (e) => {
-            e.stopPropagation();
-            const popover = document.getElementById(`popover-${violation.id}`);
-            if (popover) {
-              const isVisible = popover.style.display === 'block';
-              document.querySelectorAll('.violation-popover').forEach(p => {
-                (p as HTMLElement).style.display = 'none';
-              });
-              popover.style.display = isVisible ? 'none' : 'block';
+            // Add click handler
+            span.onclick = (e) => {
+              e.stopPropagation();
+              const popover = document.getElementById(`popover-${violation.id}`);
+              if (popover) {
+                const isVisible = popover.style.display === 'block';
+                document.querySelectorAll('.violation-popover').forEach(p => {
+                  (p as HTMLElement).style.display = 'none';
+                });
+                popover.style.display = isVisible ? 'none' : 'block';
+              }
+            };
+            
+            const originalText = node.nodeValue || '';
+            const before = originalText.substring(0, index);
+            const after = originalText.substring(index + matchLength);
+            
+            const parent = node.parentElement;
+            
+            if (before) {
+              parent.insertBefore(document.createTextNode(before), node);
             }
-          };
-          
-          const originalText = node.nodeValue || '';
-          const before = originalText.substring(0, index);
-          const after = originalText.substring(index + Math.min(100, originalText.length - index));
-          
-          const parent = node.parentElement;
-          
-          if (before) {
-            parent.insertBefore(document.createTextNode(before), node);
+            
+            parent.insertBefore(span, node);
+            
+            if (after) {
+              parent.insertBefore(document.createTextNode(after), node);
+            }
+            
+            parent.removeChild(node);
+            found = true;
+            break; // Exit the search loop once found
           }
-          
-          parent.insertBefore(span, node);
-          
-          if (after) {
-            parent.insertBefore(document.createTextNode(after), node);
-          }
-          
-          parent.removeChild(node);
-          found = true;
         }
       }
     });
