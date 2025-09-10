@@ -105,6 +105,7 @@ export async function POST(request: NextRequest) {
     let analysis;
     try {
       analysis = JSON.parse(analysisContent);
+      console.log('🔍 AI Analysis Response:', JSON.stringify(analysis, null, 2).substring(0, 1000));
     } catch (e) {
       // If not valid JSON, create structured response
       analysis = {
@@ -130,21 +131,23 @@ export async function POST(request: NextRequest) {
     }
     
     // Merge compliance check violations with AI analysis violations
+    // For FAR/Auburn violations, we need to mark them as MISSING_CLAUSE since they're about missing requirements
     const farViolations = complianceCheck.violations
       .filter(v => v.type === 'FAR_REQUIREMENT')
       .map((v, index) => ({
         id: `far-${index}`,
-        type: v.term_type || 'FAR Violation',
+        type: v.term_type || 'other',
         severity: v.severity,
         description: v.description,
-        problematicText: v.description.match(/"([^"]+)"/)?.[1] || '',
-        clause: v.description.match(/"([^"]+)"/)?.[1] || '',
+        // Most FAR violations are about missing clauses, not problematic text
+        problematicText: 'MISSING_CLAUSE',
+        clause: 'MISSING_CLAUSE',
         farReference: v.far_section || 'FAR Requirement',
         auburnPolicy: v.policy_reference || '',
         suggestion: v.suggested_alternative || 'Review FAR compliance requirements',
         confidence: v.confidence,
         location: {
-          exactText: v.description.match(/"([^"]+)"/)?.[1] || '',
+          exactText: 'MISSING_CLAUSE',
           confidence: v.confidence || 0.7
         }
       }));
@@ -153,16 +156,17 @@ export async function POST(request: NextRequest) {
       .filter(v => v.type === 'AUBURN_POLICY')
       .map((v, index) => ({
         id: `auburn-${index}`,
-        type: v.term_type || 'Auburn Policy',
+        type: v.term_type || 'other',
         severity: v.severity,
         description: v.description,
-        problematicText: v.description.match(/"([^"]+)"/)?.[1] || '',
-        clause: v.description.match(/"([^"]+)"/)?.[1] || '',
+        // Auburn policy violations are typically about missing or incorrect language
+        problematicText: 'MISSING_CLAUSE',
+        clause: 'MISSING_CLAUSE',
         auburnPolicy: v.policy_reference || '',
         suggestion: v.suggested_alternative || 'Review Auburn policy requirements',
         confidence: v.confidence,
         location: {
-          exactText: v.description.match(/"([^"]+)"/)?.[1] || '',
+          exactText: 'MISSING_CLAUSE',
           confidence: v.confidence || 0.7
         }
       }));

@@ -264,7 +264,8 @@ export function DocxViewerPaginated({
         clause: violation.clause?.substring(0, 50),
         problematicText: (violation as any).problematicText?.substring(0, 50),
         locationExactText: (violation as any).location?.exactText?.substring(0, 50),
-        description: violation.description?.substring(0, 50)
+        description: violation.description?.substring(0, 50),
+        isMissingClause: violation.clause === 'MISSING_CLAUSE' || (violation as any).problematicText === 'MISSING_CLAUSE'
       });
       
       // Check for location data with exact text (from improved RAG analysis)
