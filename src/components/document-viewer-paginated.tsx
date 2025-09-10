@@ -388,6 +388,7 @@ export function DocumentViewerPaginated({
                 onPageChange={setCurrentPage}
                 onTotalPagesChange={setTotalPages}
                 onTextExtracted={onTextExtracted}
+                activeViolationId={activeViolationId}
               />
             )}
             {documentType === DocumentType.PDF && (

@@ -15,6 +15,7 @@ interface DocxViewerPaginatedProps {
   onPageChange: (page: number) => void;
   onTotalPagesChange: (total: number) => void;
   onTextExtracted?: (text: string) => void;
+  activeViolationId?: string | null;
 }
 
 export function DocxViewerPaginated({
@@ -25,7 +26,8 @@ export function DocxViewerPaginated({
   showSinglePage,
   onPageChange,
   onTotalPagesChange,
-  onTextExtracted
+  onTextExtracted,
+  activeViolationId
 }: DocxViewerPaginatedProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -174,7 +176,7 @@ export function DocxViewerPaginated({
     convertDocument();
   }, [file, onTotalPagesChange]);
 
-  // Re-apply highlights when violations change - optimize by only when necessary
+  // Re-apply highlights when violations change or page changes
   useEffect(() => {
     if (pages.length > 0 && violations.length > 0 && !loading) {
       // Delay slightly to ensure DOM is ready
@@ -183,20 +185,24 @@ export function DocxViewerPaginated({
       }, 150);
       return () => clearTimeout(timer);
     }
-  }, [violations.length, pages.length, loading]); // Only re-run when counts change, not on every page change
+  }, [violations.length, pages.length, loading, currentPage]); // Re-run on page change too
 
-  const applyViolationHighlights = () => {
+  const applyViolationHighlights = (currentActiveId?: string | null) => {
+    const activeId = currentActiveId !== undefined ? currentActiveId : activeViolationId;
     if (!viewerRef.current || !violations.length) return;
 
     console.log('Applying highlights to', violations.length, 'violations on page', currentPage);
     
-    // Clear existing highlights first
+    // Clear existing highlights EXCEPT the active one
     const existingHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
     existingHighlights.forEach(el => {
-      const parent = el.parentNode;
-      const text = el.textContent || '';
-      if (parent) {
-        parent.replaceChild(document.createTextNode(text), el);
+      // Don't clear the active highlight
+      if (!(el as HTMLElement).classList.contains('violation-active')) {
+        const parent = el.parentNode;
+        const text = el.textContent || '';
+        if (parent) {
+          parent.replaceChild(document.createTextNode(text), el);
+        }
       }
     });
     
@@ -228,6 +234,15 @@ export function DocxViewerPaginated({
       // Extract key problematic phrases from the description itself
       const descLower = violation.description?.toLowerCase() || '';
       
+      // For FAR Assignment of Claims violations
+      if (descLower.includes('assignment of claims') || violation.farReference?.includes('52.232-23')) {
+        searchTexts.push('assignment of claims');
+        searchTexts.push('assign any claim');
+        searchTexts.push('prohibits the assignment');
+        searchTexts.push('micropurchase threshold');
+        searchTexts.push('exceeds the micropurchase');
+      }
+      
       // For payment violations - look for the actual problematic payment terms
       if (violation.type?.toLowerCase().includes('payment') || descLower.includes('payment')) {
         // Look for the specific problematic clause mentioned in the description
@@ -238,6 +253,8 @@ export function DocxViewerPaginated({
         }
         searchTexts.push('payment terms');
         searchTexts.push('net thirty (30)');
+        searchTexts.push('payment');
+        searchTexts.push('exceeds the micropurchase threshold');
       }
       
       // For task order violations - look for discretion clauses
@@ -342,6 +359,20 @@ export function DocxViewerPaginated({
             const uniqueId = `${violation.id || violation.type}_${index}_${Date.now()}`;
             span.setAttribute('data-violation-id', violation.id || violation.type || '');
             span.setAttribute('data-violation-index', index.toString());
+            
+            // Check if this violation is the currently active one
+            const violationId = violation.id || `${violation.type}_${violations.indexOf(violation)}`;
+            const isActive = activeId && (activeId === violationId || 
+                                          activeId.includes(violation.id || '') ||
+                                          activeId.includes(violation.type || ''));
+            
+            if (isActive) {
+              span.classList.add('violation-active');
+              span.style.backgroundColor = 'rgba(255, 235, 59, 0.5)';
+              span.style.border = '2px solid #fbbf24';
+              span.style.borderRadius = '3px';
+              span.style.padding = '2px';
+            }
             
             span.innerHTML = `
               <span class="highlighted-text violation-${violation.severity?.toLowerCase() || 'medium'}">${matchedText}</span>
