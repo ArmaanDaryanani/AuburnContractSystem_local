@@ -214,8 +214,8 @@ export async function POST(request: NextRequest) {
     });
     
     // Deduplicate violations - keep violations with actual text over MISSING_CLAUSE
-    const deduplicatedViolations = [];
-    const seenTopics = new Map(); // Track by topic/FAR reference
+    const deduplicatedViolations: any[] = [];
+    const seenTopics = new Map<string, any>(); // Track by topic/FAR reference
     
     for (const violation of allViolations) {
       // Create a key based on FAR reference or violation type
