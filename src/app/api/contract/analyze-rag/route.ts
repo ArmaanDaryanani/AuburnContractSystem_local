@@ -117,17 +117,26 @@ export async function POST(request: NextRequest) {
     
     // Process AI-detected violations to ensure they have exact text
     if (analysis.violations) {
-      analysis.violations = analysis.violations.map((v: any) => ({
-        ...v,
-        // Use the problematicText field if provided by AI, otherwise keep existing
-        clause: v.problematicText || v.clause || '',
-        fullClause: v.fullClause || '',
-        location: {
-          exactText: v.problematicText || '',
-          fullContext: v.fullClause || '',
-          confidence: v.confidence || 0.7
-        }
-      }));
+      console.log('📊 AI Violations Found:', analysis.violations.length);
+      analysis.violations = analysis.violations.map((v: any, idx: number) => {
+        console.log(`🎯 AI Violation ${idx}:`, {
+          type: v.type,
+          problematicText: v.problematicText?.substring(0, 100),
+          hasMissingClause: v.problematicText === 'MISSING_CLAUSE'
+        });
+        return {
+          ...v,
+          id: `AI_${v.type}_${idx}`,
+          // Use the problematicText field if provided by AI, otherwise keep existing
+          clause: v.problematicText || v.clause || '',
+          fullClause: v.fullClause || '',
+          location: {
+            exactText: v.problematicText || '',
+            fullContext: v.fullClause || '',
+            confidence: v.confidence || 0.7
+          }
+        };
+      });
     }
     
     // Merge compliance check violations with AI analysis violations
@@ -191,27 +200,45 @@ export async function POST(request: NextRequest) {
         };
       });
     
-    // Merge all violations and deduplicate based on similar descriptions
+    // Merge all violations - prioritize AI violations with actual text
     const allViolations = [
-      ...(analysis.violations || []),
-      ...farViolations,
-      ...auburnViolations
+      ...(analysis.violations || []),  // AI violations come first (they have actual text)
+      ...farViolations,                // FAR violations (missing clauses)
+      ...auburnViolations               // Auburn violations (missing clauses)
     ];
     
-    // Deduplicate violations that refer to the same issue
+    console.log('📋 Total violations before dedup:', allViolations.length, {
+      ai: analysis.violations?.length || 0,
+      far: farViolations.length,
+      auburn: auburnViolations.length
+    });
+    
+    // Deduplicate violations - keep violations with actual text over MISSING_CLAUSE
     const deduplicatedViolations = [];
-    const seenDescriptions = new Set();
+    const seenTopics = new Map(); // Track by topic/FAR reference
     
     for (const violation of allViolations) {
-      // Create a simplified key for comparison (first 100 chars of description)
-      const descKey = violation.description?.substring(0, 100).toLowerCase() || '';
+      // Create a key based on FAR reference or violation type
+      const topicKey = violation.farReference || violation.type || 'unknown';
       
-      // Skip if we've seen a very similar description
-      if (!seenDescriptions.has(descKey) || violation.problematicText !== 'MISSING_CLAUSE') {
+      // Check if we've seen this topic before
+      const existing = seenTopics.get(topicKey);
+      
+      if (!existing) {
+        // First time seeing this topic, add it
         deduplicatedViolations.push(violation);
-        seenDescriptions.add(descKey);
+        seenTopics.set(topicKey, violation);
+      } else if (existing.problematicText === 'MISSING_CLAUSE' && violation.problematicText !== 'MISSING_CLAUSE') {
+        // Replace MISSING_CLAUSE with actual text
+        const index = deduplicatedViolations.indexOf(existing);
+        if (index !== -1) {
+          deduplicatedViolations[index] = violation;
+          seenTopics.set(topicKey, violation);
+        }
       }
     }
+    
+    console.log('📋 Total violations after dedup:', deduplicatedViolations.length);
     
     analysis.violations = deduplicatedViolations;
     
