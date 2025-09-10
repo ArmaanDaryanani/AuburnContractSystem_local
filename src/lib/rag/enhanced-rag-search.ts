@@ -43,17 +43,19 @@ export interface ContractAlternative {
   is_auburn_approved: boolean;
 }
 
+interface Violation {
+  type: string;
+  far_section?: string;
+  term_type?: string;
+  description: string;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  confidence: number;
+  suggested_alternative?: string;
+  policy_reference?: string;
+}
+
 export interface ComplianceCheckResult {
-  violations: Array<{
-    type: string;
-    far_section?: string;
-    term_type?: string;
-    description: string;
-    severity: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
-    confidence: number;
-    suggested_alternative?: string;
-    policy_reference?: string;
-  }>;
+  violations: Violation[];
   alternatives: ContractAlternative[];
   far_requirements: FARRequirement[];
   overall_risk: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -156,7 +158,7 @@ export async function performComplianceCheck(
     minConfidence = 0.7
   } = options;
   
-  const violations = [];
+  const violations: Violation[] = [];
   let alternatives: ContractAlternative[] = [];
   let farRequirements: FARRequirement[] = [];
   
@@ -194,7 +196,7 @@ export async function performComplianceCheck(
             v.term_type === alt.term_type || (v.description && v.description.includes(alt.term_type))
           );
           
-          if (existingViolation && existingViolation.suggested_alternative === undefined) {
+          if (existingViolation) {
             existingViolation.suggested_alternative = alt.alternative_language;
           }
         }
@@ -212,7 +214,7 @@ export async function performComplianceCheck(
         filter_type: 'auburn_policy'
       } as any);
       
-      const policies = policyData as any[] || [];
+      const policies = (policyData || []) as any[];
       for (const policy of policies) {
         if (policy.similarity > minConfidence) {
           violations.push({
