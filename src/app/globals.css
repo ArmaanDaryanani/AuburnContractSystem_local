@@ -67,3 +67,70 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Violation Highlighting Styles */
+.highlighted-text {
+  background-color: rgba(255, 235, 59, 0.4) !important;
+  padding: 2px 4px !important;
+  border-radius: 3px !important;
+  cursor: pointer !important;
+  transition: background-color 0.2s ease !important;
+  display: inline !important;
+}
+
+.highlighted-text:hover {
+  background-color: rgba(255, 235, 59, 0.6) !important;
+}
+
+.violation-critical {
+  background-color: rgba(239, 68, 68, 0.3) !important;
+  border-bottom: 2px solid rgb(239, 68, 68) !important;
+}
+
+.violation-critical:hover {
+  background-color: rgba(239, 68, 68, 0.5) !important;
+}
+
+.violation-high {
+  background-color: rgba(251, 146, 60, 0.3) !important;
+  border-bottom: 2px solid rgb(251, 146, 60) !important;
+}
+
+.violation-high:hover {
+  background-color: rgba(251, 146, 60, 0.5) !important;
+}
+
+.violation-medium {
+  background-color: rgba(250, 204, 21, 0.3) !important;
+  border-bottom: 2px solid rgb(250, 204, 21) !important;
+}
+
+.violation-medium:hover {
+  background-color: rgba(250, 204, 21, 0.5) !important;
+}
+
+.violation-low {
+  background-color: rgba(34, 197, 94, 0.2) !important;
+  border-bottom: 2px solid rgb(34, 197, 94) !important;
+}
+
+.violation-low:hover {
+  background-color: rgba(34, 197, 94, 0.4) !important;
+}
+
+.violation-active {
+  animation: pulse 1.5s ease-in-out infinite !important;
+  box-shadow: 0 0 10px rgba(255, 235, 59, 0.8) !important;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 5px rgba(255, 235, 59, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(255, 235, 59, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 5px rgba(255, 235, 59, 0.5);
+  }
+}

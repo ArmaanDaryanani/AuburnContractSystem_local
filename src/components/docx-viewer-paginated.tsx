@@ -45,6 +45,7 @@ export function DocxViewerPaginated({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<string[]>([]);
+  const [violationPageMap, setViolationPageMap] = useState<Map<string, number[]>>(new Map());
   const viewerRef = useRef<HTMLDivElement>(null);
 
   // Add escape key listener to close modal
@@ -157,6 +158,44 @@ export function DocxViewerPaginated({
             
             setPages(styledPages);
             onTotalPagesChange(styledPages.length);
+            
+            // Map violations to their pages based on text content
+            if (violations && violations.length > 0) {
+              const pageMap = new Map<string, number[]>();
+              
+              violations.forEach(violation => {
+                const violationId = violation.id || violation.type || '';
+                const pagesToCheck: number[] = [];
+                
+                // Check which pages contain the violation text
+                styledPages.forEach((pageHtml, pageIndex) => {
+                  const pageLower = pageHtml.toLowerCase();
+                  
+                  // Check if this page contains the violation's problematic text
+                  if ((violation as any).problematicText && 
+                      (violation as any).problematicText !== 'MISSING_CLAUSE' &&
+                      pageLower.includes((violation as any).problematicText.toLowerCase())) {
+                    pagesToCheck.push(pageIndex + 1); // Page numbers are 1-indexed
+                  } else if (violation.clause && 
+                            violation.clause !== 'MISSING_CLAUSE' &&
+                            pageLower.includes(violation.clause.toLowerCase())) {
+                    pagesToCheck.push(pageIndex + 1);
+                  } else if ((violation as any).location?.exactText &&
+                            (violation as any).location.exactText !== 'MISSING_CLAUSE' &&
+                            pageLower.includes((violation as any).location.exactText.toLowerCase())) {
+                    pagesToCheck.push(pageIndex + 1);
+                  }
+                });
+                
+                if (pagesToCheck.length > 0) {
+                  pageMap.set(violationId, pagesToCheck);
+                  console.log(`📍 Violation "${violation.type}" found on page(s): ${pagesToCheck.join(', ')}`);
+                }
+              });
+              
+              setViolationPageMap(pageMap);
+            }
+            
             setLoading(false);
             setError(null);
             
@@ -186,7 +225,7 @@ export function DocxViewerPaginated({
     };
 
     convertDocument();
-  }, [file, onTotalPagesChange]);
+  }, [file, onTotalPagesChange, violations]);
 
   // Apply highlights when violations change or page changes (NOT when active selection changes)
   useEffect(() => {
@@ -245,15 +284,33 @@ export function DocxViewerPaginated({
     const activeId = currentActiveId !== undefined ? currentActiveId : activeViolationId;
     if (!viewerRef.current || !violations.length) return;
 
+    // Important: Only highlight violations that exist on the current page
+    // When document is paginated, text from other pages won't be in the DOM
+    console.log(`🔍 Applying highlights for page ${currentPage} (${showSinglePage ? 'single' : 'spread'} view)`);
     
     // Track which violations have been highlighted to avoid duplicates
     const highlightedViolations = new Set<string>();
+    let foundCount = 0;
+    let notFoundCount = 0;
     
     violations.forEach(violation => {
       // Skip if already highlighted
       const violationIdentifier = violation.id || violation.type || '';
       if (highlightedViolations.has(violationIdentifier)) {
         return;
+      }
+      
+      // Check if this violation should appear on the current page(s)
+      const violationPages = violationPageMap.get(violationIdentifier);
+      const currentPages = showSinglePage ? [currentPage] : [currentPage, currentPage + 1];
+      
+      // Skip if violation is not on the current page(s)
+      if (violationPages && violationPages.length > 0) {
+        const shouldHighlight = currentPages.some(page => violationPages.includes(page));
+        if (!shouldHighlight) {
+          console.log(`⏭️ Skipping ${violation.type} - not on current page(s) ${currentPages.join(',')} (found on pages ${violationPages.join(',')})`);
+          return;
+        }
       }
       
       // Priority 1: Use exact text from location if available
@@ -484,9 +541,15 @@ export function DocxViewerPaginated({
       
       // Log if we couldn't find a match
       if (!found && searchTexts.length > 0) {
-        console.warn(`❌ Could not find match for ${violation.type} - tried:`, searchTexts.map(t => t.substring(0, 30) + '...'));
+        console.warn(`❌ Could not find match for ${violation.type} on page ${currentPage} - tried:`, searchTexts.map(t => t.substring(0, 30) + '...'));
+        notFoundCount++;
+      } else if (found) {
+        foundCount++;
       }
     });
+    
+    // Log summary of highlighting results for this page
+    console.log(`📊 Page ${currentPage} highlighting summary: ${foundCount} found, ${notFoundCount} not found (likely on other pages)`);
   };
 
   // Removed duplicate useEffect - now handled by the main highlight effect above

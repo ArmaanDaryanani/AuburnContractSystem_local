@@ -49,6 +49,7 @@ export interface ViolationDetail {
   farReference?: string;
   auburnPolicy?: string;
   confidence: number;
+  problematicText?: string; // The actual text in the contract that triggered the violation
 }
 
 // FAR Matrix compliance patterns
@@ -216,6 +217,8 @@ export class ContractAnalyzer {
     Object.entries(FAR_VIOLATIONS).forEach(([farClause, rule]) => {
       const matches = contractText.match(rule.pattern);
       if (matches) {
+        // Get the first match as the problematic text
+        const problematicText = matches[0] || '';
         violations.push({
           id: `far-${Date.now()}-${Math.random()}`,
           type: 'FAR Violation',
@@ -226,6 +229,7 @@ export class ContractAnalyzer {
           suggestion: rule.suggestion,
           farReference: farClause,
           confidence: 0.85 + Math.random() * 0.1,
+          problematicText: problematicText, // Add the actual matched text
         });
       }
     });
@@ -234,6 +238,8 @@ export class ContractAnalyzer {
     Object.entries(AUBURN_TC_VIOLATIONS).forEach(([policy, rule]) => {
       const matches = contractText.match(rule.pattern);
       if (matches) {
+        // Get the first match as the problematic text
+        const problematicText = matches[0] || '';
         violations.push({
           id: `auburn-${Date.now()}-${Math.random()}`,
           type: 'Auburn Policy',
@@ -244,6 +250,7 @@ export class ContractAnalyzer {
           suggestion: rule.suggestion,
           auburnPolicy: policy,
           confidence: 0.80 + Math.random() * 0.15,
+          problematicText: problematicText, // Add the actual matched text
         });
       }
     });
