@@ -175,55 +175,63 @@ export function DocxViewerPaginated({
     convertDocument();
   }, [file, onTotalPagesChange]);
 
-  // Re-apply highlights when violations change or page changes
+  // Apply highlights when violations change or page changes (NOT when active selection changes)
   useEffect(() => {
     if (pages.length > 0 && violations.length > 0 && !loading) {
+      // Clear existing highlights when page changes to force re-application
+      if (viewerRef.current) {
+        const existingHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
+        existingHighlights.forEach(el => {
+          const parent = el.parentNode;
+          const text = el.textContent || '';
+          if (parent) {
+            parent.replaceChild(document.createTextNode(text), el);
+          }
+        });
+      }
+      
       // Delay slightly to ensure DOM is ready
       const timer = setTimeout(() => {
         applyViolationHighlights();
       }, 250);
       return () => clearTimeout(timer);
     }
-  }, [violations.length, pages.length, loading, currentPage, activeViolationId]); // Re-run on page change and active violation change
+  }, [violations.length, pages.length, loading, currentPage]); // Removed activeViolationId from dependencies
+
+  // Separate effect to handle active highlight styling updates
+  useEffect(() => {
+    if (!viewerRef.current || !activeViolationId) return;
+    
+    // Update active highlight styling without removing other highlights
+    const allHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
+    allHighlights.forEach(el => {
+      const element = el as HTMLElement;
+      const violationId = element.getAttribute('data-violation-id');
+      
+      if (violationId === activeViolationId || 
+          (activeViolationId && violationId && activeViolationId.includes(violationId))) {
+        // Make this the active highlight
+        element.classList.add('violation-active');
+        element.style.backgroundColor = 'rgba(255, 235, 59, 0.5)';
+        element.style.border = '2px solid #fbbf24';
+        element.style.borderRadius = '3px';
+        element.style.padding = '2px';
+      } else {
+        // Make this an inactive highlight
+        element.classList.remove('violation-active');
+        element.style.backgroundColor = '';
+        element.style.border = '';
+        element.style.borderRadius = '';
+        element.style.padding = '';
+      }
+    });
+  }, [activeViolationId]);
 
   const applyViolationHighlights = (currentActiveId?: string | null) => {
     const activeId = currentActiveId !== undefined ? currentActiveId : activeViolationId;
     if (!viewerRef.current || !violations.length) return;
 
     console.log('Applying highlights to', violations.length, 'violations on page', currentPage);
-    
-    // Clear existing highlights EXCEPT the active one
-    const existingHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
-    const activeHighlights: HTMLElement[] = [];
-    
-    existingHighlights.forEach(el => {
-      const element = el as HTMLElement;
-      // Check if this is the active highlight
-      const violationId = element.getAttribute('data-violation-id');
-      const isCurrentlyActive = element.classList.contains('violation-active') || 
-                                (activeId && violationId && (
-                                  activeId === violationId ||
-                                  activeId.includes(violationId) ||
-                                  violationId.includes(activeId)
-                                ));
-      
-      if (isCurrentlyActive) {
-        // Keep the active highlight, just ensure it has the right styling
-        element.classList.add('violation-active');
-        element.style.backgroundColor = 'rgba(255, 235, 59, 0.5)';
-        element.style.border = '2px solid #fbbf24';
-        element.style.borderRadius = '3px';
-        element.style.padding = '2px';
-        activeHighlights.push(element);
-      } else {
-        // Clear non-active highlights
-        const parent = el.parentNode;
-        const text = el.textContent || '';
-        if (parent) {
-          parent.replaceChild(document.createTextNode(text), el);
-        }
-      }
-    });
     
     // Track which violations have been highlighted to avoid duplicates
     const highlightedViolations = new Set<string>();
@@ -233,17 +241,6 @@ export function DocxViewerPaginated({
       const violationIdentifier = violation.id || violation.type || '';
       if (highlightedViolations.has(violationIdentifier)) {
         return;
-      }
-      
-      // Check if this violation is already active on the page
-      const isAlreadyActive = activeHighlights.some(el => {
-        const elId = el.getAttribute('data-violation-id');
-        return elId === violationIdentifier;
-      });
-      
-      if (isAlreadyActive) {
-        highlightedViolations.add(violationIdentifier);
-        return; // Skip re-highlighting active violations
       }
       
       // Try to find text to highlight - use clause, problematicText, or description keywords
