@@ -131,52 +131,85 @@ export async function POST(request: NextRequest) {
     }
     
     // Merge compliance check violations with AI analysis violations
-    // For FAR/Auburn violations, we need to mark them as MISSING_CLAUSE since they're about missing requirements
     const farViolations = complianceCheck.violations
       .filter(v => v.type === 'FAR_REQUIREMENT')
-      .map((v, index) => ({
-        id: `far-${index}`,
-        type: v.term_type || 'other',
-        severity: v.severity,
-        description: v.description,
-        // Most FAR violations are about missing clauses, not problematic text
-        problematicText: 'MISSING_CLAUSE',
-        clause: 'MISSING_CLAUSE',
-        farReference: v.far_section || 'FAR Requirement',
-        auburnPolicy: v.policy_reference || '',
-        suggestion: v.suggested_alternative || 'Review FAR compliance requirements',
-        confidence: v.confidence,
-        location: {
-          exactText: 'MISSING_CLAUSE',
-          confidence: v.confidence || 0.7
-        }
-      }));
+      .map((v, index) => {
+        // Check if this is about a missing clause by looking for keywords in the description
+        const isMissingClause = v.description.toLowerCase().includes('missing') || 
+                                v.description.toLowerCase().includes('not included') ||
+                                v.description.toLowerCase().includes('not present') ||
+                                v.description.toLowerCase().includes('absence') ||
+                                v.description.toLowerCase().includes('required but');
+        
+        return {
+          id: `far-${index}`,
+          type: v.term_type || 'other',
+          severity: v.severity,
+          description: v.description,
+          // Only mark as MISSING_CLAUSE if it's actually about a missing clause
+          problematicText: isMissingClause ? 'MISSING_CLAUSE' : '',
+          clause: isMissingClause ? 'MISSING_CLAUSE' : '',
+          farReference: v.far_section || 'FAR Requirement',
+          auburnPolicy: v.policy_reference || '',
+          suggestion: v.suggested_alternative || 'Review FAR compliance requirements',
+          confidence: v.confidence,
+          location: {
+            exactText: isMissingClause ? 'MISSING_CLAUSE' : '',
+            confidence: v.confidence || 0.7
+          }
+        };
+      });
     
     const auburnViolations = complianceCheck.violations
       .filter(v => v.type === 'AUBURN_POLICY')
-      .map((v, index) => ({
-        id: `auburn-${index}`,
-        type: v.term_type || 'other',
-        severity: v.severity,
-        description: v.description,
-        // Auburn policy violations are typically about missing or incorrect language
-        problematicText: 'MISSING_CLAUSE',
-        clause: 'MISSING_CLAUSE',
-        auburnPolicy: v.policy_reference || '',
-        suggestion: v.suggested_alternative || 'Review Auburn policy requirements',
-        confidence: v.confidence,
-        location: {
-          exactText: 'MISSING_CLAUSE',
-          confidence: v.confidence || 0.7
-        }
-      }));
+      .map((v, index) => {
+        // Check if this is about missing or problematic existing text
+        const isMissingClause = v.description.toLowerCase().includes('missing') || 
+                                v.description.toLowerCase().includes('not included') ||
+                                v.description.toLowerCase().includes('not present') ||
+                                v.description.toLowerCase().includes('absence');
+        
+        return {
+          id: `auburn-${index}`,
+          type: v.term_type || 'other',
+          severity: v.severity,
+          description: v.description,
+          // Only mark as MISSING_CLAUSE if it's actually about a missing clause
+          problematicText: isMissingClause ? 'MISSING_CLAUSE' : '',
+          clause: isMissingClause ? 'MISSING_CLAUSE' : '',
+          auburnPolicy: v.policy_reference || '',
+          suggestion: v.suggested_alternative || 'Review Auburn policy requirements',
+          confidence: v.confidence,
+          location: {
+            exactText: isMissingClause ? 'MISSING_CLAUSE' : '',
+            confidence: v.confidence || 0.7
+          }
+        };
+      });
     
-    // Merge all violations
-    analysis.violations = [
+    // Merge all violations and deduplicate based on similar descriptions
+    const allViolations = [
       ...(analysis.violations || []),
       ...farViolations,
       ...auburnViolations
     ];
+    
+    // Deduplicate violations that refer to the same issue
+    const deduplicatedViolations = [];
+    const seenDescriptions = new Set();
+    
+    for (const violation of allViolations) {
+      // Create a simplified key for comparison (first 100 chars of description)
+      const descKey = violation.description?.substring(0, 100).toLowerCase() || '';
+      
+      // Skip if we've seen a very similar description
+      if (!seenDescriptions.has(descKey) || violation.problematicText !== 'MISSING_CLAUSE') {
+        deduplicatedViolations.push(violation);
+        seenDescriptions.add(descKey);
+      }
+    }
+    
+    analysis.violations = deduplicatedViolations;
     
     // Add compliance summary
     if (complianceCheck.violations.length > 0 || complianceCheck.alternatives.length > 0) {
