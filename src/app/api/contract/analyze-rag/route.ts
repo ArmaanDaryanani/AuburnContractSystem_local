@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { buildEnhancedPrompt } from '@/lib/rag/rag-search';
+import { 
+  buildEnhancedCompliancePrompt,
+  performComplianceCheck,
+  searchFARRequirements,
+  searchAuburnAlternatives 
+} from '@/lib/rag/enhanced-rag-search';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -36,10 +41,24 @@ export async function POST(request: NextRequest) {
       console.error('Error saving contract:', contractError);
     }
     
-    // Build enhanced prompt with RAG context
-    const enhancedPrompt = await buildEnhancedPrompt(contractText, true);
+    // Perform compliance check first
+    const complianceCheck = await performComplianceCheck(contractText, {
+      checkFAR: true,
+      checkAuburnPolicies: true,
+      includeAlternatives: true,
+      minConfidence: 0.65
+    });
     
-    console.log('📝 Enhanced prompt built with RAG context');
+    console.log(`📊 Compliance check: ${complianceCheck.violations.length} violations, ${complianceCheck.alternatives.length} alternatives`);
+    
+    // Build enhanced prompt with FAR and Auburn context
+    const enhancedPrompt = await buildEnhancedCompliancePrompt(contractText, {
+      includeFAR: true,
+      includeAlternatives: true,
+      includeHistorical: false
+    });
+    
+    console.log('📝 Enhanced prompt built with FAR and Auburn context');
     
     // Send to OpenRouter for analysis
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -95,6 +114,17 @@ export async function POST(request: NextRequest) {
       };
     }
     
+    // Enhance with compliance check results
+    if (complianceCheck.violations.length > 0 || complianceCheck.alternatives.length > 0) {
+      analysis.complianceResults = {
+        farViolations: complianceCheck.violations.filter(v => v.type === 'FAR_REQUIREMENT'),
+        auburnPolicyViolations: complianceCheck.violations.filter(v => v.type === 'AUBURN_POLICY'),
+        suggestedAlternatives: complianceCheck.alternatives,
+        overallRisk: complianceCheck.overall_risk,
+        complianceScore: complianceCheck.compliance_score
+      };
+    }
+    
     // Save analysis results to database
     if (contract) {
       const { error: analysisError } = await supabase
@@ -126,7 +156,9 @@ export async function POST(request: NextRequest) {
     
     // Add RAG indicator to response
     analysis.ragEnhanced = true;
-    analysis.contextSources = ['FAR Matrix', 'Auburn Policies', 'Historical Contracts'];
+    analysis.contextSources = ['FAR Matrix', 'Auburn Policies', 'Contract Terms Matrix'];
+    analysis.farRequirements = complianceCheck.far_requirements.slice(0, 5);
+    analysis.totalContextUsed = complianceCheck.far_requirements.length + complianceCheck.alternatives.length;
     
     return NextResponse.json(analysis);
     
