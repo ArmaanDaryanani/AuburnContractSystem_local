@@ -18,6 +18,19 @@ interface DocxViewerPaginatedProps {
   activeViolationId?: string | null;
 }
 
+// Memoized page content component - defined outside to avoid hooks issues
+const PageContent = memo(({ pageHtml, pageNumber }: { pageHtml: string; pageNumber: number }) => {
+  console.log('PageContent rendering for page', pageNumber);
+  return (
+    <>
+      <div dangerouslySetInnerHTML={{ __html: pageHtml }} />
+      <div className="page-number">{pageNumber}</div>
+    </>
+  );
+});
+
+PageContent.displayName = 'PageContent';
+
 export function DocxViewerPaginated({
   file,
   violations,
@@ -545,20 +558,6 @@ export function DocxViewerPaginated({
 
   const leftPageIndex = currentPage - 1;
   const rightPageIndex = showSinglePage ? -1 : currentPage;
-  
-  // Memoized page content to prevent re-rendering when activeViolationId changes
-  const PageContent = React.useMemo(() => {
-    console.log('Creating new PageContent component');
-    return memo(({ pageHtml, pageNumber }: { pageHtml: string; pageNumber: number }) => {
-      console.log('PageContent rendering for page', pageNumber);
-      return (
-        <>
-          <div dangerouslySetInnerHTML={{ __html: pageHtml }} />
-          <div className="page-number">{pageNumber}</div>
-        </>
-      );
-    });
-  }, []); // Empty dependency array - component never changes
   
   return (
     <div className="h-full flex flex-col bg-gray-100">
