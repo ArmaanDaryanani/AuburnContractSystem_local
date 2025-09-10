@@ -147,8 +147,7 @@ export function DocxViewerPaginated({
             setLoading(false);
             setError(null);
             
-            // Apply violation highlights after rendering
-            setTimeout(() => applyViolationHighlights(), 200);
+            // Highlights will be applied by the useEffect
             
           } catch (conversionError: any) {
             console.error('Mammoth conversion error:', conversionError);
@@ -182,10 +181,10 @@ export function DocxViewerPaginated({
       // Delay slightly to ensure DOM is ready
       const timer = setTimeout(() => {
         applyViolationHighlights();
-      }, 150);
+      }, 250);
       return () => clearTimeout(timer);
     }
-  }, [violations.length, pages.length, loading, currentPage]); // Re-run on page change too
+  }, [violations.length, pages.length, loading, currentPage, activeViolationId]); // Re-run on page change and active violation change
 
   const applyViolationHighlights = (currentActiveId?: string | null) => {
     const activeId = currentActiveId !== undefined ? currentActiveId : activeViolationId;
@@ -195,9 +194,29 @@ export function DocxViewerPaginated({
     
     // Clear existing highlights EXCEPT the active one
     const existingHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
+    const activeHighlights: HTMLElement[] = [];
+    
     existingHighlights.forEach(el => {
-      // Don't clear the active highlight
-      if (!(el as HTMLElement).classList.contains('violation-active')) {
+      const element = el as HTMLElement;
+      // Check if this is the active highlight
+      const violationId = element.getAttribute('data-violation-id');
+      const isCurrentlyActive = element.classList.contains('violation-active') || 
+                                (activeId && violationId && (
+                                  activeId === violationId ||
+                                  activeId.includes(violationId) ||
+                                  violationId.includes(activeId)
+                                ));
+      
+      if (isCurrentlyActive) {
+        // Keep the active highlight, just ensure it has the right styling
+        element.classList.add('violation-active');
+        element.style.backgroundColor = 'rgba(255, 235, 59, 0.5)';
+        element.style.border = '2px solid #fbbf24';
+        element.style.borderRadius = '3px';
+        element.style.padding = '2px';
+        activeHighlights.push(element);
+      } else {
+        // Clear non-active highlights
         const parent = el.parentNode;
         const text = el.textContent || '';
         if (parent) {
@@ -211,8 +230,20 @@ export function DocxViewerPaginated({
     
     violations.forEach(violation => {
       // Skip if already highlighted
-      if (highlightedViolations.has(violation.id || violation.type || '')) {
+      const violationIdentifier = violation.id || violation.type || '';
+      if (highlightedViolations.has(violationIdentifier)) {
         return;
+      }
+      
+      // Check if this violation is already active on the page
+      const isAlreadyActive = activeHighlights.some(el => {
+        const elId = el.getAttribute('data-violation-id');
+        return elId === violationIdentifier;
+      });
+      
+      if (isAlreadyActive) {
+        highlightedViolations.add(violationIdentifier);
+        return; // Skip re-highlighting active violations
       }
       
       // Try to find text to highlight - use clause, problematicText, or description keywords
@@ -458,16 +489,7 @@ export function DocxViewerPaginated({
     });
   };
 
-  // Re-apply highlights when page changes - optimized
-  useEffect(() => {
-    if (pages.length > 0 && !loading && violations.length > 0) {
-      // Delay to ensure DOM is rendered
-      const timer = setTimeout(() => {
-        applyViolationHighlights();
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [currentPage, loading, violations]); // Added violations to dependencies
+  // Removed duplicate useEffect - now handled by the main highlight effect above
 
   if (loading) {
     return (
