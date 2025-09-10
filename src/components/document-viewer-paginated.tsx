@@ -137,8 +137,8 @@ export function DocumentViewerPaginated({
     
     // After page loads, try to find and highlight the specific violation
     setTimeout(() => {
-      // Force re-apply highlights on the new page
-      const viewerEl = document.querySelector('.docx-page-wrapper');
+      // Look for the element in the entire document viewer
+      const viewerEl = viewerRef.current || document.querySelector('.document-viewer-paginated');
       if (viewerEl) {
         // Find elements with matching violation ID
         const violationElements = viewerEl.querySelectorAll('.violation-highlight-container');
@@ -147,24 +147,51 @@ export function DocumentViewerPaginated({
         // Try to find element with matching violation ID
         violationElements.forEach((el) => {
           const elViolationId = (el as HTMLElement).getAttribute('data-violation-id');
-          if (elViolationId === (violation.id || violation.type)) {
+          // Check if IDs match (considering different ID formats)
+          if (elViolationId && (
+              elViolationId === violation.id || 
+              elViolationId === violation.type ||
+              violation.id?.includes(elViolationId) ||
+              elViolationId.includes(violation.id || '')
+          )) {
             targetEl = el as HTMLElement;
           }
         });
         
-        // If not found by ID, try by index
+        // If not found by ID, try to match by text content
+        if (!targetEl && violation.clause) {
+          const clauseText = violation.clause.substring(0, 30).toLowerCase();
+          violationElements.forEach((el) => {
+            const elText = (el.textContent || '').toLowerCase();
+            if (elText.includes(clauseText)) {
+              targetEl = el as HTMLElement;
+            }
+          });
+        }
+        
+        // If still not found, try by index on the current page
         if (!targetEl && violationElements.length > 0) {
-          targetEl = violationElements[Math.min(index, violationElements.length - 1)] as HTMLElement;
+          // Use modulo to wrap around if index is larger than elements on page
+          const pageIndex = index % violationElements.length;
+          targetEl = violationElements[pageIndex] as HTMLElement;
         }
         
         console.log(`Found violation element for ${violation.type}:`, targetEl ? 'yes' : 'no');
         
         if (targetEl) {
+          // Ensure the element is visible
           targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          // Don't click the element, just scroll to it
+          
+          // Add a temporary highlight effect
+          targetEl.style.transition = 'all 0.3s ease';
+          const originalBg = targetEl.style.backgroundColor;
+          targetEl.style.backgroundColor = 'yellow';
+          setTimeout(() => {
+            targetEl.style.backgroundColor = originalBg;
+          }, 2000);
         }
       }
-    }, 1200);
+    }, 1500);
   };
   
   const handlePreviousPage = () => {
