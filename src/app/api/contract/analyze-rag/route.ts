@@ -135,26 +135,33 @@ export async function POST(request: NextRequest) {
       .filter(v => v.type === 'FAR_REQUIREMENT')
       .map((v, index) => {
         // Check if this is about a missing clause by looking for keywords in the description
-        const isMissingClause = v.description.toLowerCase().includes('missing') || 
-                                v.description.toLowerCase().includes('not included') ||
-                                v.description.toLowerCase().includes('not present') ||
-                                v.description.toLowerCase().includes('absence') ||
-                                v.description.toLowerCase().includes('required but');
+        const descLower = v.description?.toLowerCase() || '';
+        const isMissingClause = descLower.includes('missing') || 
+                                descLower.includes('not included') ||
+                                descLower.includes('not present') ||
+                                descLower.includes('absence') ||
+                                descLower.includes('required but') ||
+                                descLower.includes('does not include') ||
+                                descLower.includes('does not contain') ||
+                                descLower.includes('not found');
+        
+        console.log(`🔍 FAR violation check - ID: far-${index}, Missing: ${isMissingClause}, Desc: ${v.description?.substring(0, 100)}`);
         
         return {
           id: `far-${index}`,
           type: v.term_type || 'other',
           severity: v.severity,
           description: v.description,
-          // Only mark as MISSING_CLAUSE if it's actually about a missing clause
-          problematicText: isMissingClause ? 'MISSING_CLAUSE' : '',
-          clause: isMissingClause ? 'MISSING_CLAUSE' : '',
+          // For FAR violations, always mark as MISSING_CLAUSE since they're from the compliance matrix
+          // The matrix checks for required clauses that should be present
+          problematicText: 'MISSING_CLAUSE',
+          clause: 'MISSING_CLAUSE',
           farReference: v.far_section || 'FAR Requirement',
           auburnPolicy: v.policy_reference || '',
           suggestion: v.suggested_alternative || 'Review FAR compliance requirements',
           confidence: v.confidence,
           location: {
-            exactText: isMissingClause ? 'MISSING_CLAUSE' : '',
+            exactText: 'MISSING_CLAUSE',
             confidence: v.confidence || 0.7
           }
         };
@@ -163,25 +170,22 @@ export async function POST(request: NextRequest) {
     const auburnViolations = complianceCheck.violations
       .filter(v => v.type === 'AUBURN_POLICY')
       .map((v, index) => {
-        // Check if this is about missing or problematic existing text
-        const isMissingClause = v.description.toLowerCase().includes('missing') || 
-                                v.description.toLowerCase().includes('not included') ||
-                                v.description.toLowerCase().includes('not present') ||
-                                v.description.toLowerCase().includes('absence');
+        // Auburn policy violations from the compliance matrix are also about requirements
+        console.log(`🔍 Auburn violation check - ID: auburn-${index}, Desc: ${v.description?.substring(0, 100)}`);
         
         return {
           id: `auburn-${index}`,
           type: v.term_type || 'other',
           severity: v.severity,
           description: v.description,
-          // Only mark as MISSING_CLAUSE if it's actually about a missing clause
-          problematicText: isMissingClause ? 'MISSING_CLAUSE' : '',
-          clause: isMissingClause ? 'MISSING_CLAUSE' : '',
+          // Auburn policy violations from the matrix are also about missing/required clauses
+          problematicText: 'MISSING_CLAUSE',
+          clause: 'MISSING_CLAUSE',
           auburnPolicy: v.policy_reference || '',
           suggestion: v.suggested_alternative || 'Review Auburn policy requirements',
           confidence: v.confidence,
           location: {
-            exactText: isMissingClause ? 'MISSING_CLAUSE' : '',
+            exactText: 'MISSING_CLAUSE',
             confidence: v.confidence || 0.7
           }
         };

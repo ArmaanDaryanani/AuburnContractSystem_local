@@ -259,15 +259,16 @@ export function DocxViewerPaginated({
       // Priority 1: Use exact text from location if available
       let searchTexts = [];
       
-      // Debug: Log what fields are available in the violation
-      console.log(`📋 Violation ${violation.type} has:`, {
+      // Debug: Log FULL details of what fields are available in the violation
+      console.log(`📋 Violation ${violation.type} [${(violation as any).id}] FULL DATA:`, {
         id: (violation as any).id,
-        clause: violation.clause?.substring(0, 50),
-        problematicText: (violation as any).problematicText?.substring(0, 50),
-        locationExactText: (violation as any).location?.exactText?.substring(0, 50),
-        description: violation.description?.substring(0, 100),
+        clause: violation.clause,
+        problematicText: (violation as any).problematicText,
+        locationExactText: (violation as any).location?.exactText,
+        description: violation.description,
         isMissingClause: violation.clause === 'MISSING_CLAUSE' || (violation as any).problematicText === 'MISSING_CLAUSE',
-        farReference: (violation as any).farReference
+        farReference: (violation as any).farReference,
+        severity: violation.severity
       });
       
       // Check for location data with exact text (from improved RAG analysis)
