@@ -20,6 +20,7 @@ import {
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { detectDocumentType, DocumentType } from "@/lib/document-utils";
 import { ViolationsBar } from "@/components/violations-bar";
+import { ViolationPopup } from "@/components/violation-popup";
 import dynamic from 'next/dynamic';
 import { cn } from "@/lib/utils";
 
@@ -74,6 +75,7 @@ export function DocumentViewerPaginated({
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [showSinglePage, setShowSinglePage] = useState(false);
+  const [selectedViolation, setSelectedViolation] = useState<ViolationDetail | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -99,6 +101,9 @@ export function DocumentViewerPaginated({
 
   const handleViolationClick = (violation: ViolationDetail, index: number) => {
     console.log('Violation clicked:', violation);
+    
+    // Show the violation popup with the correct data
+    setSelectedViolation(violation);
     
     // Based on violation type/index, estimate which page it might be on
     // Payment issues are usually early in the contract
@@ -156,7 +161,7 @@ export function DocumentViewerPaginated({
         
         if (targetEl) {
           targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          targetEl.click();
+          // Don't click the element, just scroll to it
         }
       }
     }, 1200);
@@ -209,9 +214,10 @@ export function DocumentViewerPaginated({
   }
 
   return (
-    <Card className="border-gray-200 shadow-sm h-full">
-      {/* Header */}
-      <div className="border-b border-gray-200 p-4">
+    <>
+      <Card className="border-gray-200 shadow-sm h-full">
+        {/* Header */}
+        <div className="border-b border-gray-200 p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 text-gray-600" />
@@ -426,5 +432,14 @@ export function DocumentViewerPaginated({
         )}
       </CardContent>
     </Card>
+    
+    {/* Violation Popup */}
+    {selectedViolation && (
+      <ViolationPopup 
+        violation={selectedViolation}
+        onClose={() => setSelectedViolation(null)}
+      />
+    )}
+    </>
   );
 }
