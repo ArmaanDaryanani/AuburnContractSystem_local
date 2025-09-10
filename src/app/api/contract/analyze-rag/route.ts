@@ -114,14 +114,49 @@ export async function POST(request: NextRequest) {
       };
     }
     
-    // Enhance with compliance check results
+    // Merge compliance check violations with AI analysis violations
+    const farViolations = complianceCheck.violations
+      .filter(v => v.type === 'FAR_REQUIREMENT')
+      .map((v, index) => ({
+        id: `far-${index}`,
+        type: v.term_type || 'FAR Violation',
+        severity: v.severity,
+        description: v.description,
+        problematicText: v.description.match(/"([^"]+)"/)?.[1] || '',
+        farReference: v.far_section || 'FAR Requirement',
+        auburnPolicy: v.policy_reference || '',
+        suggestion: v.suggested_alternative || 'Review FAR compliance requirements',
+        confidence: v.confidence
+      }));
+    
+    const auburnViolations = complianceCheck.violations
+      .filter(v => v.type === 'AUBURN_POLICY')
+      .map((v, index) => ({
+        id: `auburn-${index}`,
+        type: v.term_type || 'Auburn Policy',
+        severity: v.severity,
+        description: v.description,
+        problematicText: v.description.match(/"([^"]+)"/)?.[1] || '',
+        auburnPolicy: v.policy_reference || '',
+        suggestion: v.suggested_alternative || 'Review Auburn policy requirements',
+        confidence: v.confidence
+      }));
+    
+    // Merge all violations
+    analysis.violations = [
+      ...(analysis.violations || []),
+      ...farViolations,
+      ...auburnViolations
+    ];
+    
+    // Add compliance summary
     if (complianceCheck.violations.length > 0 || complianceCheck.alternatives.length > 0) {
       analysis.complianceResults = {
-        farViolations: complianceCheck.violations.filter(v => v.type === 'FAR_REQUIREMENT'),
-        auburnPolicyViolations: complianceCheck.violations.filter(v => v.type === 'AUBURN_POLICY'),
-        suggestedAlternatives: complianceCheck.alternatives,
         overallRisk: complianceCheck.overall_risk,
-        complianceScore: complianceCheck.compliance_score
+        complianceScore: complianceCheck.compliance_score,
+        totalFARViolations: farViolations.length,
+        totalAuburnViolations: auburnViolations.length,
+        suggestedAlternatives: complianceCheck.alternatives
       };
     }
     
