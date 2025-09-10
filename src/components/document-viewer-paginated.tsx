@@ -76,6 +76,7 @@ export function DocumentViewerPaginated({
   const [totalPages, setTotalPages] = useState(0);
   const [showSinglePage, setShowSinglePage] = useState(false);
   const [selectedViolation, setSelectedViolation] = useState<ViolationDetail | null>(null);
+  const [activeViolationId, setActiveViolationId] = useState<string | null>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,6 +85,30 @@ export function DocumentViewerPaginated({
       setDocumentType(docInfo.type);
     }
   }, [file]);
+
+  // Re-apply active highlight when page changes
+  useEffect(() => {
+    if (activeViolationId && viewerRef.current) {
+      const timer = setTimeout(() => {
+        const allHighlights = viewerRef.current?.querySelectorAll('.violation-highlight-container');
+        allHighlights?.forEach((el) => {
+          const elViolationId = (el as HTMLElement).getAttribute('data-violation-id');
+          if (elViolationId && activeViolationId.includes(elViolationId)) {
+            (el as HTMLElement).classList.add('violation-active');
+            (el as HTMLElement).style.backgroundColor = 'rgba(255, 235, 59, 0.5)';
+            (el as HTMLElement).style.border = '2px solid #fbbf24';
+            (el as HTMLElement).style.borderRadius = '3px';
+            (el as HTMLElement).style.padding = '2px';
+          } else {
+            (el as HTMLElement).classList.remove('violation-active');
+            (el as HTMLElement).style.backgroundColor = '';
+            (el as HTMLElement).style.border = '';
+          }
+        });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPage, activeViolationId]);
 
   const handleZoomIn = () => setZoom(prev => Math.min(prev + 25, 200));
   const handleZoomOut = () => setZoom(prev => Math.max(prev - 25, 50));
@@ -101,6 +126,10 @@ export function DocumentViewerPaginated({
 
   const handleViolationClick = (violation: ViolationDetail, index: number) => {
     console.log('Violation clicked:', violation);
+    
+    // Set the active violation
+    const violationId = violation.id || `${violation.type}_${index}`;
+    setActiveViolationId(violationId);
     
     // Show the violation popup with the correct data
     setSelectedViolation(violation);
@@ -178,20 +207,25 @@ export function DocumentViewerPaginated({
         
         console.log(`Found violation element for ${violation.type}:`, targetEl ? 'yes' : 'no');
         
+        // First, clear any previous active highlights
+        const allHighlights = viewerEl.querySelectorAll('.violation-highlight-container');
+        allHighlights.forEach((el) => {
+          (el as HTMLElement).classList.remove('violation-active');
+          (el as HTMLElement).style.backgroundColor = '';
+          (el as HTMLElement).style.border = '';
+        });
+        
         if (targetEl) {
           // Ensure the element is visible
           targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           
-          // Add a temporary highlight effect
-          const el = targetEl;
-          el.style.transition = 'all 0.3s ease';
-          const originalBg = el.style.backgroundColor;
-          el.style.backgroundColor = 'yellow';
-          setTimeout(() => {
-            if (el) {
-              el.style.backgroundColor = originalBg;
-            }
-          }, 2000);
+          // Add persistent highlight effect
+          targetEl.classList.add('violation-active');
+          targetEl.style.transition = 'all 0.3s ease';
+          targetEl.style.backgroundColor = 'rgba(255, 235, 59, 0.5)'; // Yellow highlight
+          targetEl.style.border = '2px solid #fbbf24'; // Yellow border
+          targetEl.style.borderRadius = '3px';
+          targetEl.style.padding = '2px';
         }
       }
     }, 1500);
@@ -336,6 +370,7 @@ export function DocumentViewerPaginated({
         <ViolationsBar 
           violations={violations}
           onViolationClick={handleViolationClick}
+          selectedViolationId={activeViolationId}
         />
       )}
 

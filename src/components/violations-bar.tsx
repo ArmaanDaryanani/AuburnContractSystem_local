@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { cn } from "@/lib/utils";
 import { AlertCircle, AlertTriangle, Info, XCircle } from "lucide-react";
@@ -8,10 +8,12 @@ import { AlertCircle, AlertTriangle, Info, XCircle } from "lucide-react";
 interface ViolationsBarProps {
   violations: ViolationDetail[];
   onViolationClick: (violation: ViolationDetail, index: number) => void;
+  selectedViolationId?: string | null;
   className?: string;
 }
 
-export function ViolationsBar({ violations, onViolationClick, className }: ViolationsBarProps) {
+export function ViolationsBar({ violations, onViolationClick, selectedViolationId, className }: ViolationsBarProps) {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
   // Remove duplicate violations based on description similarity but keep original indices
   const uniqueViolationsWithIndex = violations.reduce((acc, violation, originalIndex) => {
     const isDuplicate = acc.some(v => 
@@ -97,16 +99,30 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
         {/* Minimal Horizontal Scrolling Cards */}
         <div className="overflow-x-auto pb-1 mx-2">
           <div className="flex gap-2 justify-start">
-            {uniqueViolationsWithIndex.map((item, idx) => (
-              <button
-                key={item.violation.id || `${item.violation.type}_${idx}`}
-                onClick={() => onViolationClick(item.violation, item.originalIndex)}
-                className={cn(
-                  "flex-shrink-0 min-w-[200px] max-w-[200px] h-[40px] px-2 py-1.5 rounded-md border",
-                  getSeverityColor(item.violation.severity || 'MEDIUM'),
-                  "cursor-pointer"
-                )}
-              >
+            {uniqueViolationsWithIndex.map((item, idx) => {
+              const isActive = activeIndex === idx || 
+                              (selectedViolationId && item.violation.id === selectedViolationId);
+              
+              return (
+                <button
+                  key={item.violation.id || `${item.violation.type}_${idx}`}
+                  onClick={() => {
+                    setActiveIndex(idx);
+                    onViolationClick(item.violation, item.originalIndex);
+                  }}
+                  className={cn(
+                    "flex-shrink-0 min-w-[200px] max-w-[200px] h-[40px] px-2 py-1.5 rounded-md border transition-all",
+                    isActive ? [
+                      "ring-2 ring-offset-1",
+                      item.violation.severity?.toUpperCase() === 'CRITICAL' ? "ring-red-500 border-red-500" :
+                      item.violation.severity?.toUpperCase() === 'HIGH' ? "ring-orange-500 border-orange-500" :
+                      item.violation.severity?.toUpperCase() === 'MEDIUM' ? "ring-yellow-500 border-yellow-500" :
+                      "ring-blue-500 border-blue-500",
+                      "shadow-md"
+                    ] : getSeverityColor(item.violation.severity || 'MEDIUM'),
+                    "cursor-pointer hover:shadow-md"
+                  )}
+                >
                 <div className="flex items-center gap-2 h-full">
                   {getSeverityIcon(item.violation.severity || 'MEDIUM')}
                   <div className="flex-1 text-left overflow-hidden">
@@ -116,7 +132,8 @@ export function ViolationsBar({ violations, onViolationClick, className }: Viola
                   </div>
                 </div>
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
