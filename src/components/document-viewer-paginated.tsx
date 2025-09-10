@@ -183,11 +183,14 @@ export function DocumentViewerPaginated({
           targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
           
           // Add a temporary highlight effect
-          targetEl.style.transition = 'all 0.3s ease';
-          const originalBg = targetEl.style.backgroundColor;
-          targetEl.style.backgroundColor = 'yellow';
+          const el = targetEl;
+          el.style.transition = 'all 0.3s ease';
+          const originalBg = el.style.backgroundColor;
+          el.style.backgroundColor = 'yellow';
           setTimeout(() => {
-            targetEl.style.backgroundColor = originalBg;
+            if (el) {
+              el.style.backgroundColor = originalBg;
+            }
           }, 2000);
         }
       }
