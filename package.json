@@ -17,7 +17,9 @@
     "regenerate-embeddings": "tsx scripts/regenerate-embeddings.ts",
     "regenerate-all": "tsx scripts/regenerate-all.ts",
     "test-openai": "tsx scripts/test-openai.ts",
-    "test-rag-search": "tsx scripts/test-rag-search.ts"
+    "test-rag-search": "tsx scripts/test-rag-search.ts",
+    "ingest-far-contracts": "tsx scripts/ingest-far-and-contracts.ts",
+    "test-enhanced-rag": "tsx scripts/test-enhanced-rag.ts"
   },
   "dependencies": {
     "@radix-ui/react-alert-dialog": "^1.1.15",

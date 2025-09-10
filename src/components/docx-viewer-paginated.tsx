@@ -225,66 +225,74 @@ export function DocxViewerPaginated({
         searchTexts.push(violation.clause.substring(0, 50));
       }
       
-      // Add specific keywords based on violation type and description
-      if (violation.type?.toLowerCase().includes('payment') || violation.description?.toLowerCase().includes('payment')) {
-        searchTexts.push('ten (10) business days');
+      // Extract key problematic phrases from the description itself
+      const descLower = violation.description?.toLowerCase() || '';
+      
+      // For payment violations - look for the actual problematic payment terms
+      if (violation.type?.toLowerCase().includes('payment') || descLower.includes('payment')) {
+        // Look for the specific problematic clause mentioned in the description
+        if (descLower.includes('ten (10) business days of receiving payment')) {
+          searchTexts.push('ten (10) business days of receiving payment from the Government');
+          searchTexts.push('ten (10) business days of receiving payment');
+          searchTexts.push("Company's payment terms are ten (10) business days");
+        }
         searchTexts.push('payment terms');
-        searchTexts.push('payment will be made ten');
-        searchTexts.push('receiving payment from');
-        searchTexts.push("Company's payment terms");
-        searchTexts.push('10) business days of receiving payment');
-        searchTexts.push('invoice');
+        searchTexts.push('net thirty (30)');
       }
+      
+      // For task order violations - look for discretion clauses
+      if (descLower.includes('sole and absolute discretion') || descLower.includes('task order')) {
+        searchTexts.push('sole and absolute discretion');
+        searchTexts.push('nothing obligates CMI2 to issue a Task Order');
+        searchTexts.push('CMI2 sole and absolute discretion in issuing Task Orders');
+        searchTexts.push('discretion in issuing Task Orders');
+        searchTexts.push('no obligation to issue');
+      }
+      
       if (violation.type?.toLowerCase().includes('indemnif')) {
         searchTexts.push('indemnify');
         searchTexts.push('indemnification');
         searchTexts.push('hold harmless');
       }
-      if (violation.type?.toLowerCase().includes('termination') || violation.description?.toLowerCase().includes('termination')) {
+      
+      if (violation.type?.toLowerCase().includes('termination') || descLower.includes('termination')) {
         searchTexts.push('termination');
         searchTexts.push('terminate');
         searchTexts.push('Termination for Convenience');
-        searchTexts.push('issuance of Task Orders');
-        searchTexts.push('Task Orders');
       }
+      
       // Look for other specific terms from the descriptions
-      if (violation.description?.toLowerCase().includes('grant')) {
+      if (descLower.includes('grant')) {
         searchTexts.push('grant');
         searchTexts.push('rights');
-        searchTexts.push('Company');
       }
-      if (violation.description?.toLowerCase().includes('article')) {
+      
+      if (descLower.includes('article')) {
         searchTexts.push('Article IX');
         searchTexts.push('ARTICLE IX');
         searchTexts.push('ARTICLE');
       }
-      // For medium/low severity - look for more generic terms
+      
+      // For medium/low severity - look for more specific terms
       if (violation.severity?.toLowerCase() === 'medium' || violation.severity?.toLowerCase() === 'low') {
-        if (violation.description?.toLowerCase().includes('incorporate')) {
+        if (descLower.includes('incorporate')) {
           searchTexts.push('incorporate');
           searchTexts.push('FAR');
           searchTexts.push('flowdown');
         }
-        if (violation.description?.toLowerCase().includes('personnel')) {
+        if (descLower.includes('personnel')) {
           searchTexts.push('key subcontractor personnel');
           searchTexts.push('personnel');
         }
-        if (violation.description?.toLowerCase().includes('written')) {
+        if (descLower.includes('written')) {
           searchTexts.push('written');
           searchTexts.push('email');
           searchTexts.push('electronic');
-          searchTexts.push('invoices');
         }
-        if (violation.description?.toLowerCase().includes('invoice')) {
+        if (descLower.includes('invoice')) {
           searchTexts.push('invoice');
           searchTexts.push('invoices');
-          searchTexts.push('email');
           searchTexts.push('submitted via email');
-        }
-        // Extract key phrases from description - but shorter to avoid overlaps
-        const descWords = violation.description?.split(' ').slice(2, 5).join(' ');
-        if (descWords && descWords.length > 10) {
-          searchTexts.push(descWords);
         }
       }
 
