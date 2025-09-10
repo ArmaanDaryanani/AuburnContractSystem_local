@@ -20,7 +20,6 @@ interface DocxViewerPaginatedProps {
 
 // Memoized page content component - defined outside to avoid hooks issues
 const PageContent = memo(({ pageHtml, pageNumber }: { pageHtml: string; pageNumber: number }) => {
-  console.log('PageContent rendering for page', pageNumber);
   return (
     <>
       <div dangerouslySetInnerHTML={{ __html: pageHtml }} />
@@ -42,8 +41,6 @@ export function DocxViewerPaginated({
   onTextExtracted,
   activeViolationId
 }: DocxViewerPaginatedProps) {
-  console.log('===== DocxViewerPaginated RENDER =====');
-  console.log('Props - activeViolationId:', activeViolationId, 'violations:', violations.length);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,10 +51,8 @@ export function DocxViewerPaginated({
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        console.log('ESC key pressed');
         const modal = document.getElementById('violation-modal');
         if (modal) {
-          console.log('Closing modal via ESC key');
           modal.remove();
         }
       }
@@ -195,14 +190,10 @@ export function DocxViewerPaginated({
 
   // Apply highlights when violations change or page changes (NOT when active selection changes)
   useEffect(() => {
-    console.log('=== Highlight Application Effect Triggered ===');
-    console.log('Pages:', pages.length, 'Violations:', violations.length, 'Loading:', loading, 'Current Page:', currentPage);
-    
     if (pages.length > 0 && violations.length > 0 && !loading) {
       // Clear existing highlights when page changes to force re-application
       if (viewerRef.current) {
         const existingHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
-        console.log('Found existing highlights to clear:', existingHighlights.length);
         existingHighlights.forEach(el => {
           const parent = el.parentNode;
           const text = el.textContent || '';
@@ -214,7 +205,6 @@ export function DocxViewerPaginated({
       
       // Delay slightly to ensure DOM is ready
       const timer = setTimeout(() => {
-        console.log('Calling applyViolationHighlights after delay');
         applyViolationHighlights();
       }, 250);
       return () => clearTimeout(timer);
@@ -223,14 +213,10 @@ export function DocxViewerPaginated({
 
   // Separate effect to handle active highlight styling updates
   useEffect(() => {
-    console.log('=== Active Highlight Styling Effect Triggered ===');
-    console.log('Active Violation ID:', activeViolationId);
-    
     if (!viewerRef.current || !activeViolationId) return;
     
     // Update active highlight styling without removing other highlights
     const allHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
-    console.log('Found highlights to update styling:', allHighlights.length);
     
     allHighlights.forEach(el => {
       const element = el as HTMLElement;
@@ -239,7 +225,6 @@ export function DocxViewerPaginated({
       if (violationId === activeViolationId || 
           (activeViolationId && violationId && activeViolationId.includes(violationId))) {
         // Make this the active highlight
-        console.log('Making highlight active for:', violationId);
         element.classList.add('violation-active');
         element.style.backgroundColor = 'rgba(255, 235, 59, 0.5)';
         element.style.border = '2px solid #fbbf24';
@@ -260,7 +245,6 @@ export function DocxViewerPaginated({
     const activeId = currentActiveId !== undefined ? currentActiveId : activeViolationId;
     if (!viewerRef.current || !violations.length) return;
 
-    console.log('Applying highlights to', violations.length, 'violations on page', currentPage);
     
     // Track which violations have been highlighted to avoid duplicates
     const highlightedViolations = new Set<string>();
@@ -275,8 +259,6 @@ export function DocxViewerPaginated({
       // Try to find text to highlight - use clause, problematicText, or description keywords
       let searchTexts = [];
       
-      // Check what fields are available
-      console.log('Looking for violation:', violation.type, violation.severity, 'on page', currentPage);
       
       if ((violation as any).problematicText) {
         // Use only the first 50 chars to avoid partial matches
@@ -301,17 +283,25 @@ export function DocxViewerPaginated({
       }
       
       // For payment violations - look for the actual problematic payment terms
-      if (violation.type?.toLowerCase().includes('payment') || descLower.includes('payment')) {
-        // Look for the specific problematic clause mentioned in the description
-        if (descLower.includes('ten (10) business days of receiving payment')) {
-          searchTexts.push('ten (10) business days of receiving payment from the Government');
+      if (violation.type?.toLowerCase().includes('payment')) {
+        // Look for specific payment-related text based on the description
+        if (descLower.includes('excess of the authorized total')) {
+          searchTexts.push('MIT shall not be obligated to pay');
+          searchTexts.push('excess of the Authorized Total');
+          searchTexts.push('Costs in excess of the Authorized Total');
+        } else if (descLower.includes('final invoice')) {
+          searchTexts.push('final invoice shall be a cumulative invoice');
+          searchTexts.push('within sixty (60) days');
+          searchTexts.push('marked "Final"');
+        } else if (descLower.includes('ten (10) business days')) {
           searchTexts.push('ten (10) business days of receiving payment');
           searchTexts.push("Company's payment terms are ten (10) business days");
+        } else {
+          // Generic payment terms as fallback
+          searchTexts.push('payment terms');
+          searchTexts.push('net thirty (30)');
+          searchTexts.push('payment');
         }
-        searchTexts.push('payment terms');
-        searchTexts.push('net thirty (30)');
-        searchTexts.push('payment');
-        searchTexts.push('exceeds the micropurchase threshold');
       }
       
       // For task order violations - look for discretion clauses
@@ -329,7 +319,9 @@ export function DocxViewerPaginated({
         searchTexts.push('hold harmless');
       }
       
-      if (violation.type?.toLowerCase().includes('termination') || descLower.includes('termination')) {
+      // Only look for termination text if it's actually a termination-type violation
+      if (violation.type?.toLowerCase().includes('termination') && 
+          !violation.type?.toLowerCase().includes('payment')) {
         searchTexts.push('termination');
         searchTexts.push('terminate');
         searchTexts.push('Termination for Convenience');
@@ -476,18 +468,14 @@ export function DocxViewerPaginated({
               const closeBtn = modal.querySelector('.violation-modal-close');
               if (closeBtn) {
                 closeBtn.addEventListener('click', () => {
-                  console.log('Modal close button clicked');
                   modal.remove();
-                  console.log('Modal removed from DOM');
                 });
               }
               
               // Close on overlay click
               modal.onclick = (e) => {
                 if (e.target === modal) {
-                  console.log('Modal overlay clicked');
                   modal.remove();
-                  console.log('Modal removed from DOM');
                 }
               };
             };
