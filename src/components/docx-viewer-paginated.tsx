@@ -328,6 +328,17 @@ export function DocxViewerPaginated({
         severity: violation.severity
       });
       
+      // Check if this is a FAR violation about a missing clause
+      const isFARViolation = violation.type?.includes('FAR') || 
+                            (violation as any).farReference?.includes('FAR') ||
+                            violation.id?.startsWith('FAR_');
+      
+      // FAR violations are typically about missing clauses - don't try to highlight
+      if (isFARViolation) {
+        console.log(`📑 Skipping FAR violation ${violation.type} - these are about missing required clauses, not problematic text`);
+        return;
+      }
+      
       // Check for location data with exact text (from improved RAG analysis)
       if ((violation as any).location?.exactText && (violation as any).location.exactText !== 'MISSING_CLAUSE') {
         // This is the exact problematic text from the AI analysis
@@ -343,16 +354,15 @@ export function DocxViewerPaginated({
       // Priority 3: Use problematicText field if available
       if ((violation as any).problematicText && 
           !searchTexts.includes((violation as any).problematicText) && 
-          (violation as any).problematicText !== 'MISSING_CLAUSE') {
+          (violation as any).problematicText !== 'MISSING_CLAUSE' &&
+          (violation as any).problematicText !== 'Not Applicable') {
         searchTexts.push((violation as any).problematicText);
       }
       
       // If this is a missing clause violation, skip highlighting
-      if (searchTexts.length === 0 && 
-          ((violation.clause === 'MISSING_CLAUSE') || 
-           ((violation as any).problematicText === 'MISSING_CLAUSE') ||
-           ((violation as any).location?.exactText === 'MISSING_CLAUSE'))) {
-        console.log(`⚠️ Skipping highlight for ${violation.type} - clause is missing from contract`);
+      if (searchTexts.length === 0 || 
+          searchTexts.every(text => text.includes('Not Applicable') || text === 'MISSING_CLAUSE')) {
+        console.log(`⚠️ Skipping highlight for ${violation.type} - clause is missing from contract or not applicable`);
         return; // Skip this violation as there's nothing to highlight
       }
       
