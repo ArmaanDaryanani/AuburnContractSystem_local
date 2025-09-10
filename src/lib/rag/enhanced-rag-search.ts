@@ -83,7 +83,8 @@ export async function searchFARRequirements(
       return [];
     }
     
-    return (data || []).map((item: any) => ({
+    const results = data as any[] || [];
+    return results.map((item: any) => ({
       id: item.id,
       far_section: item.far_section,
       requirement_text: item.chunk_text,
@@ -120,7 +121,8 @@ export async function searchAuburnAlternatives(
       return [];
     }
     
-    return (data || []).map((item: any) => ({
+    const results = data as any[] || [];
+    return results.map((item: any) => ({
       id: item.id,
       term_type: item.term_type || '',
       standard_language: item.language_type === 'standard' ? item.chunk_text : '',
