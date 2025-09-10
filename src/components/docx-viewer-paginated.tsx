@@ -256,110 +256,64 @@ export function DocxViewerPaginated({
         return;
       }
       
-      // Try to find text to highlight - use clause, problematicText, or description keywords
+      // Priority 1: Use exact text from location if available
       let searchTexts = [];
       
-      
-      if ((violation as any).problematicText) {
-        // Use only the first 50 chars to avoid partial matches
-        const text = (violation as any).problematicText;
-        searchTexts.push(text.substring(0, Math.min(50, text.length)));
+      // Check for location data with exact text (from improved RAG analysis)
+      if ((violation as any).location?.exactText) {
+        // This is the exact problematic text from the AI analysis
+        searchTexts.push((violation as any).location.exactText);
       }
       
+      // Priority 2: Use clause field if it contains the exact problematic text
       if (violation.clause && violation.clause.length > 10) {
-        searchTexts.push(violation.clause.substring(0, 50));
+        // Don't truncate - use the full clause text for exact matching
+        searchTexts.push(violation.clause);
       }
       
-      // Extract key problematic phrases from the description itself
-      const descLower = violation.description?.toLowerCase() || '';
-      
-      // For FAR Assignment of Claims violations
-      if (descLower.includes('assignment of claims') || violation.farReference?.includes('52.232-23')) {
-        searchTexts.push('assignment of claims');
-        searchTexts.push('assign any claim');
-        searchTexts.push('prohibits the assignment');
-        searchTexts.push('micropurchase threshold');
-        searchTexts.push('exceeds the micropurchase');
+      // Priority 3: Use problematicText field if available
+      if ((violation as any).problematicText && !searchTexts.includes((violation as any).problematicText)) {
+        searchTexts.push((violation as any).problematicText);
       }
       
-      // For payment violations - look for the actual problematic payment terms
-      if (violation.type?.toLowerCase().includes('payment')) {
-        // Look for specific payment-related text based on the description
-        if (descLower.includes('excess of the authorized total')) {
-          searchTexts.push('MIT shall not be obligated to pay');
-          searchTexts.push('excess of the Authorized Total');
-          searchTexts.push('Costs in excess of the Authorized Total');
-        } else if (descLower.includes('final invoice')) {
-          searchTexts.push('final invoice shall be a cumulative invoice');
-          searchTexts.push('within sixty (60) days');
-          searchTexts.push('marked "Final"');
-        } else if (descLower.includes('ten (10) business days')) {
-          searchTexts.push('ten (10) business days of receiving payment');
-          searchTexts.push("Company's payment terms are ten (10) business days");
-        } else {
-          // Generic payment terms as fallback
-          searchTexts.push('payment terms');
-          searchTexts.push('net thirty (30)');
-          searchTexts.push('payment');
+      // Only use keyword fallback if we don't have exact text
+      if (searchTexts.length === 0) {
+        // Extract key problematic phrases from the description as a last resort
+        const descLower = violation.description?.toLowerCase() || '';
+        
+        // Try to extract quoted text from the description first
+        const quotedMatches = violation.description?.match(/"([^"]+)"/g);
+        if (quotedMatches && quotedMatches.length > 0) {
+          quotedMatches.forEach(match => {
+            searchTexts.push(match.replace(/"/g, ''));
+          });
+        }
+        
+        // Only use generic keywords if we still have no search text
+        if (searchTexts.length === 0) {
+          // Very minimal keyword fallback - avoid generic terms
+          if (violation.type?.toLowerCase().includes('payment') && descLower.includes('excess')) {
+            searchTexts.push('excess of the Authorized Total');
+          } else if (violation.type?.toLowerCase().includes('termination') && descLower.includes('failure to cure')) {
+            searchTexts.push('failure to cure withi');
+            searchTexts.push('failure to cure');
+          } else if (descLower.includes('incomplete')) {
+            // Look for incomplete text patterns
+            const incompleteMatch = descLower.match(/['"]([^'"]*withi[^'"]*)['"]/) || 
+                                   descLower.match(/incomplete.*?['"]([^'"]+)['"]/) ||
+                                   descLower.match(/the ['"]([^'"]+)['"] is.*incomplete/);
+            if (incompleteMatch) {
+              searchTexts.push(incompleteMatch[1]);
+            }
+          }
         }
       }
-      
-      // For task order violations - look for discretion clauses
-      if (descLower.includes('sole and absolute discretion') || descLower.includes('task order')) {
-        searchTexts.push('sole and absolute discretion');
-        searchTexts.push('nothing obligates CMI2 to issue a Task Order');
-        searchTexts.push('CMI2 sole and absolute discretion in issuing Task Orders');
-        searchTexts.push('discretion in issuing Task Orders');
-        searchTexts.push('no obligation to issue');
-      }
-      
-      if (violation.type?.toLowerCase().includes('indemnif')) {
-        searchTexts.push('indemnify');
-        searchTexts.push('indemnification');
-        searchTexts.push('hold harmless');
-      }
-      
-      // Only look for termination text if it's actually a termination-type violation
-      if (violation.type?.toLowerCase().includes('termination') && 
-          !violation.type?.toLowerCase().includes('payment')) {
-        searchTexts.push('termination');
-        searchTexts.push('terminate');
-        searchTexts.push('Termination for Convenience');
-      }
-      
-      // Look for other specific terms from the descriptions
-      if (descLower.includes('grant')) {
-        searchTexts.push('grant');
-        searchTexts.push('rights');
-      }
-      
-      if (descLower.includes('article')) {
-        searchTexts.push('Article IX');
-        searchTexts.push('ARTICLE IX');
-        searchTexts.push('ARTICLE');
-      }
-      
-      // For medium/low severity - look for more specific terms
-      if (violation.severity?.toLowerCase() === 'medium' || violation.severity?.toLowerCase() === 'low') {
-        if (descLower.includes('incorporate')) {
-          searchTexts.push('incorporate');
-          searchTexts.push('FAR');
-          searchTexts.push('flowdown');
-        }
-        if (descLower.includes('personnel')) {
-          searchTexts.push('key subcontractor personnel');
-          searchTexts.push('personnel');
-        }
-        if (descLower.includes('written')) {
-          searchTexts.push('written');
-          searchTexts.push('email');
-          searchTexts.push('electronic');
-        }
-        if (descLower.includes('invoice')) {
-          searchTexts.push('invoice');
-          searchTexts.push('invoices');
-          searchTexts.push('submitted via email');
-        }
+
+      // Log what we're searching for
+      if (searchTexts.length > 0) {
+        console.log(`🔍 Searching for ${violation.type} with texts:`, searchTexts.map(t => t.substring(0, 30) + '...'));
+      } else {
+        console.warn(`⚠️ No search text for ${violation.type} - violation will not be highlighted`);
       }
 
       const walker = document.createTreeWalker(
@@ -396,7 +350,7 @@ export function DocxViewerPaginated({
           const index = nodeTextLower.indexOf(searchLower);
         
           if (index !== -1 && node.parentElement && !node.parentElement.classList.contains('violation-highlight-container')) {
-            console.log('Found match for violation:', violation.type, 'at:', searchText);
+            console.log(`✅ Found exact match for ${violation.type}:`, searchText.substring(0, 50) + '...');
             const span = document.createElement('span');
             span.className = 'violation-highlight-container';
             
@@ -503,6 +457,11 @@ export function DocxViewerPaginated({
             break; // Exit the search loop once found
           }
         }
+      }
+      
+      // Log if we couldn't find a match
+      if (!found && searchTexts.length > 0) {
+        console.warn(`❌ Could not find match for ${violation.type} - tried:`, searchTexts.map(t => t.substring(0, 30) + '...'));
       }
     });
   };

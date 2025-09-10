@@ -114,6 +114,21 @@ export async function POST(request: NextRequest) {
       };
     }
     
+    // Process AI-detected violations to ensure they have exact text
+    if (analysis.violations) {
+      analysis.violations = analysis.violations.map((v: any) => ({
+        ...v,
+        // Use the problematicText field if provided by AI, otherwise keep existing
+        clause: v.problematicText || v.clause || '',
+        fullClause: v.fullClause || '',
+        location: {
+          exactText: v.problematicText || '',
+          fullContext: v.fullClause || '',
+          confidence: v.confidence || 0.7
+        }
+      }));
+    }
+    
     // Merge compliance check violations with AI analysis violations
     const farViolations = complianceCheck.violations
       .filter(v => v.type === 'FAR_REQUIREMENT')
@@ -123,10 +138,15 @@ export async function POST(request: NextRequest) {
         severity: v.severity,
         description: v.description,
         problematicText: v.description.match(/"([^"]+)"/)?.[1] || '',
+        clause: v.description.match(/"([^"]+)"/)?.[1] || '',
         farReference: v.far_section || 'FAR Requirement',
         auburnPolicy: v.policy_reference || '',
         suggestion: v.suggested_alternative || 'Review FAR compliance requirements',
-        confidence: v.confidence
+        confidence: v.confidence,
+        location: {
+          exactText: v.description.match(/"([^"]+)"/)?.[1] || '',
+          confidence: v.confidence || 0.7
+        }
       }));
     
     const auburnViolations = complianceCheck.violations
@@ -137,9 +157,14 @@ export async function POST(request: NextRequest) {
         severity: v.severity,
         description: v.description,
         problematicText: v.description.match(/"([^"]+)"/)?.[1] || '',
+        clause: v.description.match(/"([^"]+)"/)?.[1] || '',
         auburnPolicy: v.policy_reference || '',
         suggestion: v.suggested_alternative || 'Review Auburn policy requirements',
-        confidence: v.confidence
+        confidence: v.confidence,
+        location: {
+          exactText: v.description.match(/"([^"]+)"/)?.[1] || '',
+          confidence: v.confidence || 0.7
+        }
       }));
     
     // Merge all violations

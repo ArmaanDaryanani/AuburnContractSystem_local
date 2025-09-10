@@ -333,7 +333,22 @@ You are analyzing a contract for Auburn University compliance with FAR requireme
     prompt += `3. Assign risk levels (CRITICAL, HIGH, MEDIUM, LOW) to each finding\n`;
     prompt += `4. Suggest Auburn-approved alternative language where available\n`;
     prompt += `5. Provide a confidence score (0-1) for each finding\n`;
-    prompt += `6. Format response as structured JSON\n`;
+    prompt += `6. For EACH violation, extract the EXACT problematic text from the contract (minimum 50 characters)\n`;
+    prompt += `7. Include the complete sentence or clause containing the issue\n`;
+    prompt += `8. Format response as structured JSON with the following structure:\n`;
+    prompt += `   {\n`;
+    prompt += `     "violations": [{\n`;
+    prompt += `       "type": "violation type",\n`;
+    prompt += `       "severity": "CRITICAL|HIGH|MEDIUM|LOW",\n`;
+    prompt += `       "description": "detailed description",\n`;
+    prompt += `       "problematicText": "EXACT text from contract causing the issue",\n`;
+    prompt += `       "fullClause": "Complete sentence or paragraph containing the problematic text",\n`;
+    prompt += `       "farReference": "FAR section if applicable",\n`;
+    prompt += `       "auburnPolicy": "Auburn policy if applicable",\n`;
+    prompt += `       "suggestion": "recommended fix",\n`;
+    prompt += `       "confidence": 0.0-1.0\n`;
+    prompt += `     }]\n`;
+    prompt += `   }\n`;
     
     return prompt;
   } catch (error) {
