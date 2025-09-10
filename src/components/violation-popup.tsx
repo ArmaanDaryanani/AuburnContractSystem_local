@@ -43,7 +43,7 @@ export function ViolationPopup({ violation, onClose, position }: ViolationPopupP
           {/* Title and severity */}
           <div>
             <h3 className="text-lg font-semibold mb-2">
-              {violation.title || violation.type || 'Violation'}
+              {violation.type || 'Violation'}
             </h3>
             <div className="flex items-center gap-2">
               {violation.farReference && (
@@ -75,11 +75,11 @@ export function ViolationPopup({ violation, onClose, position }: ViolationPopupP
             </div>
           )}
 
-          {/* Problematic text */}
-          {violation.problematicText && (
+          {/* Clause/Problematic text */}
+          {violation.clause && (
             <div className="p-3 bg-white/50 rounded border border-current/20">
               <p className="text-xs font-medium mb-1">Problematic Text:</p>
-              <p className="text-sm italic">"{violation.problematicText}"</p>
+              <p className="text-sm italic">"{violation.clause}"</p>
             </div>
           )}
 
