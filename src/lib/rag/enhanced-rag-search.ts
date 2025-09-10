@@ -171,10 +171,12 @@ export async function performComplianceCheck(
           violations.push({
             type: 'FAR_REQUIREMENT',
             far_section: req.far_section,
+            term_type: undefined,
             description: `Potential FAR ${req.far_section} compliance issue: ${req.requirement_text}`,
-            severity: req.risk_level === 'CRITICAL' ? 'CRITICAL' : 
-                     req.risk_level === 'HIGH' ? 'HIGH' : 'MEDIUM',
+            severity: (req.risk_level === 'CRITICAL' ? 'CRITICAL' : 
+                     req.risk_level === 'HIGH' ? 'HIGH' : 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
             confidence: req.similarity,
+            suggested_alternative: undefined,
             policy_reference: req.auburn_policy
           });
         }
@@ -189,10 +191,10 @@ export async function performComplianceCheck(
       for (const alt of alternatives) {
         if (alt.similarity > minConfidence && alt.is_auburn_approved) {
           const existingViolation = violations.find(v => 
-            v.term_type === alt.term_type || v.description.includes(alt.term_type)
+            v.term_type === alt.term_type || (v.description && v.description.includes(alt.term_type))
           );
           
-          if (existingViolation) {
+          if (existingViolation && existingViolation.suggested_alternative === undefined) {
             existingViolation.suggested_alternative = alt.alternative_language;
           }
         }
@@ -210,17 +212,19 @@ export async function performComplianceCheck(
         filter_type: 'auburn_policy'
       } as any);
       
-      if (policyData) {
-        for (const policy of policyData) {
-          if (policy.similarity > minConfidence) {
-            violations.push({
-              type: 'AUBURN_POLICY',
-              description: `Auburn policy consideration: ${policy.chunk_text}`,
-              severity: 'MEDIUM',
-              confidence: policy.similarity,
-              policy_reference: policy.document_title
-            });
-          }
+      const policies = policyData as any[] || [];
+      for (const policy of policies) {
+        if (policy.similarity > minConfidence) {
+          violations.push({
+            type: 'AUBURN_POLICY',
+            far_section: undefined,
+            term_type: undefined,
+            description: `Auburn policy consideration: ${policy.chunk_text}`,
+            severity: 'MEDIUM' as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
+            confidence: policy.similarity,
+            suggested_alternative: undefined,
+            policy_reference: policy.document_title
+          });
         }
       }
     }
@@ -268,8 +272,7 @@ export async function buildEnhancedCompliancePrompt(
 ): Promise<string> {
   const {
     includeFAR = true,
-    includeAlternatives = true,
-    includeHistorical = false
+    includeAlternatives = true
   } = options;
   
   try {
