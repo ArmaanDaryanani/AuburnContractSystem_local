@@ -259,21 +259,40 @@ export function DocxViewerPaginated({
       // Priority 1: Use exact text from location if available
       let searchTexts = [];
       
+      // Debug: Log what fields are available in the violation
+      console.log(`📋 Violation ${violation.type} has:`, {
+        clause: violation.clause?.substring(0, 50),
+        problematicText: (violation as any).problematicText?.substring(0, 50),
+        locationExactText: (violation as any).location?.exactText?.substring(0, 50),
+        description: violation.description?.substring(0, 50)
+      });
+      
       // Check for location data with exact text (from improved RAG analysis)
-      if ((violation as any).location?.exactText) {
+      if ((violation as any).location?.exactText && (violation as any).location.exactText !== 'MISSING_CLAUSE') {
         // This is the exact problematic text from the AI analysis
         searchTexts.push((violation as any).location.exactText);
       }
       
       // Priority 2: Use clause field if it contains the exact problematic text
-      if (violation.clause && violation.clause.length > 10) {
+      if (violation.clause && violation.clause.length > 10 && violation.clause !== 'MISSING_CLAUSE') {
         // Don't truncate - use the full clause text for exact matching
         searchTexts.push(violation.clause);
       }
       
       // Priority 3: Use problematicText field if available
-      if ((violation as any).problematicText && !searchTexts.includes((violation as any).problematicText)) {
+      if ((violation as any).problematicText && 
+          !searchTexts.includes((violation as any).problematicText) && 
+          (violation as any).problematicText !== 'MISSING_CLAUSE') {
         searchTexts.push((violation as any).problematicText);
+      }
+      
+      // If this is a missing clause violation, skip highlighting
+      if (searchTexts.length === 0 && 
+          ((violation.clause === 'MISSING_CLAUSE') || 
+           ((violation as any).problematicText === 'MISSING_CLAUSE') ||
+           ((violation as any).location?.exactText === 'MISSING_CLAUSE'))) {
+        console.log(`⚠️ Skipping highlight for ${violation.type} - clause is missing from contract`);
+        return; // Skip this violation as there's nothing to highlight
       }
       
       // Only use keyword fallback if we don't have exact text
