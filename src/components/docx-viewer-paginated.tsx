@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, memo } from "react";
 import mammoth from "mammoth";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { cn } from "@/lib/utils";
@@ -29,6 +29,9 @@ export function DocxViewerPaginated({
   onTextExtracted,
   activeViolationId
 }: DocxViewerPaginatedProps) {
+  console.log('===== DocxViewerPaginated RENDER =====');
+  console.log('Props - activeViolationId:', activeViolationId, 'violations:', violations.length);
+  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<string[]>([]);
@@ -38,8 +41,10 @@ export function DocxViewerPaginated({
   useEffect(() => {
     const handleEscKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        console.log('ESC key pressed');
         const modal = document.getElementById('violation-modal');
         if (modal) {
+          console.log('Closing modal via ESC key');
           modal.remove();
         }
       }
@@ -177,10 +182,14 @@ export function DocxViewerPaginated({
 
   // Apply highlights when violations change or page changes (NOT when active selection changes)
   useEffect(() => {
+    console.log('=== Highlight Application Effect Triggered ===');
+    console.log('Pages:', pages.length, 'Violations:', violations.length, 'Loading:', loading, 'Current Page:', currentPage);
+    
     if (pages.length > 0 && violations.length > 0 && !loading) {
       // Clear existing highlights when page changes to force re-application
       if (viewerRef.current) {
         const existingHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
+        console.log('Found existing highlights to clear:', existingHighlights.length);
         existingHighlights.forEach(el => {
           const parent = el.parentNode;
           const text = el.textContent || '';
@@ -192,6 +201,7 @@ export function DocxViewerPaginated({
       
       // Delay slightly to ensure DOM is ready
       const timer = setTimeout(() => {
+        console.log('Calling applyViolationHighlights after delay');
         applyViolationHighlights();
       }, 250);
       return () => clearTimeout(timer);
@@ -200,10 +210,15 @@ export function DocxViewerPaginated({
 
   // Separate effect to handle active highlight styling updates
   useEffect(() => {
+    console.log('=== Active Highlight Styling Effect Triggered ===');
+    console.log('Active Violation ID:', activeViolationId);
+    
     if (!viewerRef.current || !activeViolationId) return;
     
     // Update active highlight styling without removing other highlights
     const allHighlights = viewerRef.current.querySelectorAll('.violation-highlight-container');
+    console.log('Found highlights to update styling:', allHighlights.length);
+    
     allHighlights.forEach(el => {
       const element = el as HTMLElement;
       const violationId = element.getAttribute('data-violation-id');
@@ -211,6 +226,7 @@ export function DocxViewerPaginated({
       if (violationId === activeViolationId || 
           (activeViolationId && violationId && activeViolationId.includes(violationId))) {
         // Make this the active highlight
+        console.log('Making highlight active for:', violationId);
         element.classList.add('violation-active');
         element.style.backgroundColor = 'rgba(255, 235, 59, 0.5)';
         element.style.border = '2px solid #fbbf24';
@@ -447,14 +463,18 @@ export function DocxViewerPaginated({
               const closeBtn = modal.querySelector('.violation-modal-close');
               if (closeBtn) {
                 closeBtn.addEventListener('click', () => {
+                  console.log('Modal close button clicked');
                   modal.remove();
+                  console.log('Modal removed from DOM');
                 });
               }
               
               // Close on overlay click
               modal.onclick = (e) => {
                 if (e.target === modal) {
+                  console.log('Modal overlay clicked');
                   modal.remove();
+                  console.log('Modal removed from DOM');
                 }
               };
             };
@@ -525,6 +545,20 @@ export function DocxViewerPaginated({
 
   const leftPageIndex = currentPage - 1;
   const rightPageIndex = showSinglePage ? -1 : currentPage;
+  
+  // Memoized page content to prevent re-rendering when activeViolationId changes
+  const PageContent = React.useMemo(() => {
+    console.log('Creating new PageContent component');
+    return memo(({ pageHtml, pageNumber }: { pageHtml: string; pageNumber: number }) => {
+      console.log('PageContent rendering for page', pageNumber);
+      return (
+        <>
+          <div dangerouslySetInnerHTML={{ __html: pageHtml }} />
+          <div className="page-number">{pageNumber}</div>
+        </>
+      );
+    });
+  }, []); // Empty dependency array - component never changes
   
   return (
     <div className="h-full flex flex-col bg-gray-100">
@@ -904,22 +938,19 @@ export function DocxViewerPaginated({
         {showSinglePage ? (
           // Single page view
           <div className="docx-page docx-page-single">
-            <div dangerouslySetInnerHTML={{ __html: pages[leftPageIndex] || '' }} />
-            <div className="page-number">{currentPage}</div>
+            <PageContent pageHtml={pages[leftPageIndex] || ''} pageNumber={currentPage} />
           </div>
         ) : (
           // Two-page spread view
           <>
             {leftPageIndex >= 0 && leftPageIndex < pages.length && (
               <div className="docx-page docx-page-spread">
-                <div dangerouslySetInnerHTML={{ __html: pages[leftPageIndex] || '' }} />
-                <div className="page-number">{currentPage}</div>
+                <PageContent pageHtml={pages[leftPageIndex] || ''} pageNumber={currentPage} />
               </div>
             )}
             {rightPageIndex >= 0 && rightPageIndex < pages.length && (
               <div className="docx-page docx-page-spread">
-                <div dangerouslySetInnerHTML={{ __html: pages[rightPageIndex] || '' }} />
-                <div className="page-number">{currentPage + 1}</div>
+                <PageContent pageHtml={pages[rightPageIndex] || ''} pageNumber={currentPage + 1} />
               </div>
             )}
           </>
