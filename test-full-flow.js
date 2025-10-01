@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Test script to verify OpenRouter integration end-to-end
-const API_KEY = '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';
+const API_KEY = process.env.OPENROUTER_API_KEY || 'YOUR_OPENROUTER_API_KEY_HERE';
 const MODEL = 'google/gemini-2.5-flash-lite';
 const BASE_URL = 'http://localhost:3006';
 
