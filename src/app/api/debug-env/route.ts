@@ -5,7 +5,7 @@ export async function GET() {
   const envCheck = {
     hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
     hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    hasSupabaseServiceKey: !!process.env.SUPABASE_SERVICE_KEY,
+    hasSupabaseServiceKey: !!process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY,
     hasOpenRouterKey: !!process.env.OPENROUTER_API_KEY,
     hasOpenAIKey: !!process.env.OPENAI_API_KEY,
     

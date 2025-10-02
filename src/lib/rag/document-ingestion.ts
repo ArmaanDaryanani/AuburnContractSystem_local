@@ -6,7 +6,7 @@ let supabase: ReturnType<typeof createClient> | null = null;
 function getSupabaseClient() {
   if (!supabase) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     if (!url || !key) {
       throw new Error('Supabase environment variables not configured');

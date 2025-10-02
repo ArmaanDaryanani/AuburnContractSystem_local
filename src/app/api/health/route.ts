@@ -10,7 +10,7 @@ export async function GET() {
     supabase: {
       hasUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
       hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      hasServiceKey: !!process.env.SUPABASE_SERVICE_KEY,
+      hasServiceKey: !!process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY,
       urlPrefix: process.env.NEXT_PUBLIC_SUPABASE_URL?.substring(0, 30),
       canConnect: false,
       error: null as string | null,
@@ -31,7 +31,7 @@ export async function GET() {
     try {
       const supabase = createClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       );
       
       // Try a simple query to test connection

@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   
   if (!url || !key) {
     throw new Error('Supabase credentials not configured');
@@ -19,7 +19,7 @@ export async function GET() {
     console.log('[/api/knowledge-base] Starting GET request');
     
     // Check if Supabase is configured
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || (!process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY && !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)) {
       console.log('[/api/knowledge-base] Supabase not configured, returning mock data');
       // Return mock data when Supabase is not configured
       return NextResponse.json({
@@ -142,7 +142,7 @@ export async function GET() {
       envCheck: {
         hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
         hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        hasServiceKey: !!process.env.SUPABASE_SERVICE_KEY
+        hasServiceKey: !!process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_KEY
       }
     }, { status: 500 });
   }
