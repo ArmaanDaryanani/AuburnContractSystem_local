@@ -50,67 +50,72 @@ export interface ViolationDetail {
   auburnPolicy?: string;
   confidence: number;
   problematicText?: string; // The actual text in the contract that triggered the violation
+  isMissingClause?: boolean; // True for FAR violations about missing required clauses
 }
 
-// FAR Matrix compliance patterns
+// FAR Matrix compliance patterns - these check for MISSING required clauses
 const FAR_VIOLATIONS = {
   'FAR 52.245-1': {
-    pattern: /government(\s+)property|government-furnished/gi,
+    checkPattern: /government(\s+)property|government-furnished/gi,
+    isMissing: true,
     severity: 'HIGH' as const,
-    description: 'Missing required government property clause',
+    description: 'Missing: Required FAR 52.245-1 Government Property clause not found',
     suggestion: 'Add standard FAR 52.245-1 Government Property clause',
   },
-  'FAR 28.106': {
-    pattern: /indemnif(y|ication)|hold\s+harmless/gi,
-    severity: 'CRITICAL' as const,
-    description: 'Indemnification clause detected - Auburn cannot indemnify',
-    suggestion: 'Replace with: "Each party shall be responsible for its own acts and omissions"',
-  },
-  'FAR 27.402': {
-    pattern: /intellectual\s+property|IP\s+rights|patent|copyright/gi,
-    severity: 'HIGH' as const,
-    description: 'IP assignment must be based on inventive contribution',
-    suggestion: 'IP rights shall be allocated based on inventive contribution per FAR 27.402',
-  },
-  'FAR 32.906': {
-    pattern: /payment\s+terms?|net\s+\d+|invoice/gi,
+  'FAR 52.232-23': {
+    checkPattern: /assignment\s+of\s+claims|claims\s+assignment/gi,
+    isMissing: true,
     severity: 'MEDIUM' as const,
-    description: 'Payment terms must align with Auburn NET 30 policy',
-    suggestion: 'Payment shall be made within 30 days of invoice receipt',
+    description: 'Missing: Required FAR 52.232-23 Assignment of Claims clause not found',
+    suggestion: 'Add FAR 52.232-23 Assignment of Claims provision',
   },
-  'FAR 28.103': {
-    pattern: /unlimited\s+liability|liquidated\s+damages/gi,
-    severity: 'CRITICAL' as const,
-    description: 'Auburn cannot accept unlimited liability',
-    suggestion: 'Liability shall be limited to the amount of the contract value',
+  'FAR 52.216-7007': {
+    checkPattern: /allowable\s+cost|cost\s+reimbursement/gi,
+    isMissing: true,
+    severity: 'HIGH' as const,
+    description: 'Missing: Required FAR 52.216-7007 Allowable Cost and Payment clause not found',
+    suggestion: 'Add FAR 52.216-7007 for cost reimbursement contracts',
+  },
+  'FAR 52.227-14': {
+    checkPattern: /rights\s+in\s+data|data\s+rights/gi,
+    isMissing: true,
+    severity: 'HIGH' as const,
+    description: 'Missing: Required FAR 52.227-14 Rights in Data clause not found',
+    suggestion: 'Add FAR 52.227-14 Rights in Data - General provision',
   },
 };
 
-// Auburn-specific T&C violations
+// Auburn-specific T&C violations - these check for PROBLEMATIC TEXT that exists
 const AUBURN_TC_VIOLATIONS = {
-  'Publication Rights': {
-    pattern: /publication|publish|academic\s+freedom/gi,
+  'Indemnification': {
+    pattern: /indemnif(y|ication)|hold\s+harmless/gi,
+    severity: 'CRITICAL' as const,
+    description: 'Found: Indemnification clause - Auburn cannot indemnify as a state entity',
+    suggestion: 'Replace with: "Each party shall be responsible for its own acts and omissions"',
+  },
+  'Unlimited Liability': {
+    pattern: /unlimited\s+liability|liquidated\s+damages/gi,
+    severity: 'CRITICAL' as const,
+    description: 'Found: Unlimited liability provision - Auburn cannot accept unlimited liability',
+    suggestion: 'Liability shall be limited to the amount of the contract value',
+  },
+  'Payment Terms': {
+    pattern: /payment.{0,50}(upon\s+receipt|immediately|in\s+excess)/gi,
     severity: 'HIGH' as const,
-    description: 'Publication rights must be preserved',
-    suggestion: 'Auburn retains the right to publish research results after a 30-day review period',
+    description: 'Found: Non-compliant payment terms - must align with Auburn NET 30 policy',
+    suggestion: 'Payment shall be made within 30 days of invoice receipt',
   },
-  'Termination': {
-    pattern: /terminat(e|ion)|cancel(lation)?/gi,
-    severity: 'MEDIUM' as const,
-    description: 'Incomplete termination provisions',
-    suggestion: 'Include both convenience and cause termination clauses',
-  },
-  'Insurance': {
-    pattern: /insurance|coverage|liability\s+insurance/gi,
-    severity: 'MEDIUM' as const,
-    description: 'Insurance requirements must comply with state regulations',
-    suggestion: 'Auburn maintains insurance per state requirements',
-  },
-  'Export Control': {
-    pattern: /export\s+control|ITAR|EAR/gi,
+  'Termination Without Notice': {
+    pattern: /terminat.{0,30}without\s+(cause|notice)/gi,
     severity: 'HIGH' as const,
-    description: 'Export control compliance required',
-    suggestion: 'Parties shall comply with all applicable export control regulations',
+    description: 'Found: Improper termination clause - requires proper notice period',
+    suggestion: 'Termination requires 30 days written notice',
+  },
+  'IP Assignment': {
+    pattern: /intellectual\s+property.{0,50}belong.{0,20}exclusively/gi,
+    severity: 'HIGH' as const,
+    description: 'Found: Exclusive IP assignment - must be based on inventive contribution',
+    suggestion: 'IP rights shall be allocated based on inventive contribution',
   },
 };
 
@@ -213,44 +218,45 @@ export class ContractAnalyzer {
   } {
     const violations: ViolationDetail[] = [];
     
-    // Check FAR violations
+    // Check FAR violations - these are MISSING required clauses
     Object.entries(FAR_VIOLATIONS).forEach(([farClause, rule]) => {
-      const matches = contractText.match(rule.pattern);
-      if (matches) {
-        // Get the first match as the problematic text
-        const problematicText = matches[0] || '';
+      const matches = contractText.match(rule.checkPattern);
+      // FAR violations are triggered when the required clause is NOT found
+      if (!matches || matches.length === 0) {
         violations.push({
-          id: `far-${Date.now()}-${Math.random()}`,
-          type: 'FAR Violation',
+          id: `FAR_${farClause.replace(/\s+/g, '_')}_${Date.now()}`,
+          type: 'FAR Violation - Missing Clause',
           severity: rule.severity,
           clause: farClause,
           description: rule.description,
-          location: `Found ${matches.length} instance(s)`,
+          location: 'Not found in contract',
           suggestion: rule.suggestion,
           farReference: farClause,
-          confidence: 0.85 + Math.random() * 0.1,
-          problematicText: problematicText, // Add the actual matched text
+          confidence: 0.95, // High confidence for missing clauses
+          problematicText: 'MISSING_CLAUSE',
+          isMissingClause: true, // Mark as missing clause
         });
       }
     });
 
-    // Check Auburn T&C violations
+    // Check Auburn T&C violations - these are PROBLEMATIC TEXT that exists
     Object.entries(AUBURN_TC_VIOLATIONS).forEach(([policy, rule]) => {
       const matches = contractText.match(rule.pattern);
       if (matches) {
-        // Get the first match as the problematic text
+        // Get the actual problematic text found
         const problematicText = matches[0] || '';
         violations.push({
-          id: `auburn-${Date.now()}-${Math.random()}`,
-          type: 'Auburn Policy',
+          id: `AUBURN_${policy.replace(/\s+/g, '_')}_${Date.now()}`,
+          type: 'Auburn Policy Violation',
           severity: rule.severity,
           clause: policy,
           description: rule.description,
-          location: `Found ${matches.length} instance(s)`,
+          location: `Found on page`,
           suggestion: rule.suggestion,
           auburnPolicy: policy,
-          confidence: 0.80 + Math.random() * 0.15,
-          problematicText: problematicText, // Add the actual matched text
+          confidence: 0.90 + Math.random() * 0.08,
+          problematicText: problematicText, // The actual text found
+          isMissingClause: false, // This is found text, not missing
         });
       }
     });

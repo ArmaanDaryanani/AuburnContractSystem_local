@@ -1,5 +1,5 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, FileX, AlertTriangle } from 'lucide-react';
 import { ViolationDetail } from '@/lib/contract-analysis';
 import { Badge } from '@/components/ui/badge';
 
@@ -40,9 +40,19 @@ export function ViolationPopup({ violation, onClose, position }: ViolationPopupP
         </button>
 
         <div className="space-y-4">
+          {/* Missing clause indicator */}
+          {violation.isMissingClause && (
+            <div className="flex items-center gap-2 p-2 bg-gray-800 text-white rounded">
+              <FileX className="h-4 w-4" />
+              <span className="text-sm font-medium">Missing Required Clause</span>
+            </div>
+          )}
+
           {/* Title and severity */}
           <div>
-            <h3 className="text-lg font-semibold mb-2">
+            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+              {violation.isMissingClause && <FileX className="h-5 w-5" />}
+              {!violation.isMissingClause && <AlertTriangle className="h-5 w-5" />}
               {violation.type || 'Violation'}
             </h3>
             <div className="flex items-center gap-2">
@@ -76,12 +86,20 @@ export function ViolationPopup({ violation, onClose, position }: ViolationPopupP
           )}
 
           {/* Clause/Problematic text */}
-          {violation.clause && (
-            <div className="p-3 bg-white/50 rounded border border-current/20">
-              <p className="text-xs font-medium mb-1">Problematic Text:</p>
-              <p className="text-sm italic">"{violation.clause}"</p>
+          {violation.isMissingClause ? (
+            <div className="p-3 bg-gray-100 rounded border border-gray-300">
+              <p className="text-xs font-medium mb-1">Required Clause:</p>
+              <p className="text-sm text-gray-600">{violation.clause}</p>
+              <p className="text-xs text-gray-500 mt-2">
+                ⚠️ This clause is required but was not found in the contract
+              </p>
             </div>
-          )}
+          ) : violation.problematicText && violation.problematicText !== 'MISSING_CLAUSE' ? (
+            <div className="p-3 bg-white/50 rounded border border-current/20">
+              <p className="text-xs font-medium mb-1">Problematic Text Found:</p>
+              <p className="text-sm italic">"{violation.problematicText}"</p>
+            </div>
+          ) : null}
 
           {/* Suggestion */}
           {violation.suggestion && (

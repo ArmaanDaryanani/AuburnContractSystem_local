@@ -328,14 +328,14 @@ export function DocxViewerPaginated({
         severity: violation.severity
       });
       
-      // Check if this is a FAR violation about a missing clause
-      const isFARViolation = violation.type?.includes('FAR') || 
-                            (violation as any).farReference?.includes('FAR') ||
-                            violation.id?.startsWith('FAR_');
+      // Check if this is a missing clause violation
+      const isMissingClause = (violation as any).isMissingClause === true ||
+                             violation.problematicText === 'MISSING_CLAUSE' ||
+                             violation.type?.includes('Missing Clause');
       
-      // FAR violations are typically about missing clauses - don't try to highlight
-      if (isFARViolation) {
-        console.log(`📑 Skipping FAR violation ${violation.type} - these are about missing required clauses, not problematic text`);
+      // Skip highlighting for missing clauses
+      if (isMissingClause) {
+        console.log(`📑 Skipping ${violation.type} - this is a missing required clause, not problematic text`);
         return;
       }
       

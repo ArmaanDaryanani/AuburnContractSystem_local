@@ -127,7 +127,18 @@ export function DocumentViewerPaginated({
   const handleViolationClick = (violation: ViolationDetail, index: number) => {
     console.log('Violation clicked:', violation);
     
-    // Set the active violation
+    // Check if this is a missing clause violation
+    if (violation.isMissingClause) {
+      console.log('📑 Missing clause violation - showing modal instead of navigating');
+      
+      // For missing clauses, just show the popup modal with details
+      setSelectedViolation(violation);
+      
+      // Don't navigate or try to highlight since the clause doesn't exist
+      return;
+    }
+    
+    // For found text violations, proceed with normal navigation and highlighting
     const violationId = violation.id || `${violation.type}_${index}`;
     setActiveViolationId(violationId);
     

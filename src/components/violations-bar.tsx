@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { cn } from "@/lib/utils";
-import { AlertCircle, AlertTriangle, Info, XCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle, Info, XCircle, FileX } from "lucide-react";
 
 interface ViolationsBarProps {
   violations: ViolationDetail[];
@@ -27,7 +27,13 @@ export function ViolationsBar({ violations, onViolationClick, selectedViolationI
     return acc;
   }, [] as Array<{ violation: ViolationDetail, originalIndex: number }>);
   
-  const getSeverityIcon = (severity: string) => {
+  const getSeverityIcon = (severity: string, isMissing?: boolean) => {
+    // Special icon for missing clauses
+    if (isMissing) {
+      return <FileX className="h-3.5 w-3.5" />;
+    }
+    
+    // Icons for found problematic text
     switch (severity?.toUpperCase()) {
       case 'CRITICAL':
         return <XCircle className="h-3.5 w-3.5" />;
@@ -110,8 +116,13 @@ export function ViolationsBar({ violations, onViolationClick, selectedViolationI
                     setActiveIndex(idx);
                     onViolationClick(item.violation, item.originalIndex);
                   }}
+                  title={item.violation.isMissingClause 
+                    ? "Missing required clause - cannot highlight" 
+                    : "Click to see highlighted text"}
                   className={cn(
-                    "flex-shrink-0 min-w-[200px] max-w-[200px] h-[40px] px-2 py-1.5 rounded-md border transition-all",
+                    "flex-shrink-0 min-w-[200px] max-w-[200px] h-[40px] px-2 py-1.5 rounded-md border transition-all relative",
+                    // Dashed border for missing clauses, solid for found text
+                    item.violation.isMissingClause ? "border-dashed" : "border-solid",
                     isActive ? [
                       "ring-2 ring-offset-1",
                       item.violation.severity?.toUpperCase() === 'CRITICAL' ? "ring-red-500 border-red-500" :
@@ -124,12 +135,18 @@ export function ViolationsBar({ violations, onViolationClick, selectedViolationI
                   )}
                 >
                 <div className="flex items-center gap-2 h-full">
-                  {getSeverityIcon(item.violation.severity || 'MEDIUM')}
+                  {getSeverityIcon(item.violation.severity || 'MEDIUM', item.violation.isMissingClause)}
                   <div className="flex-1 text-left overflow-hidden">
                     <div className="text-xs truncate">
                       {item.violation.description?.substring(0, 45)}...
                     </div>
                   </div>
+                  {/* Badge for missing clauses */}
+                  {item.violation.isMissingClause && (
+                    <span className="absolute top-0.5 right-0.5 text-[9px] px-1 py-0 bg-gray-600 text-white rounded">
+                      Missing
+                    </span>
+                  )}
                 </div>
               </button>
               );
