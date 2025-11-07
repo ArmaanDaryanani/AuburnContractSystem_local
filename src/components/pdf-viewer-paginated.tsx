@@ -119,12 +119,13 @@ export function PDFViewerPaginated({
   useEffect(() => {
     if (pageTextsRef.current.length === 0 || violations.length === 0) return;
     
-    // Build cumulative character ranges for each page
+    // Build cumulative character ranges for each page using same JOINER as text extraction
+    const JOINER = "\n";
     let acc = 0;
     const ranges = pageTextsRef.current.map(pageText => {
       const start = acc;
       const end = acc + pageText.length;
-      acc = end + 1; // +1 for newline between pages
+      acc = end + JOINER.length; // MUST match the joiner used in text extraction
       return { start, end };
     });
 
@@ -142,11 +143,11 @@ export function PDFViewerPaginated({
           else if (v.start >= end) lo = mid + 1;
           else {
             v.pageNumber = mid + 1; // Convert to 1-based
-            console.log(`✅ Mapped violation "${v.id}" to page ${mid + 1} using index ${v.start}`);
+            console.log(`✅ Mapped violation "${v.id}" to page ${mid + 1} using index ${v.start}-${v.end}`);
             return;
           }
         }
-        console.log(`⚠️ Index ${v.start} out of range for "${v.id}"`);
+        console.log(`⚠️ Index ${v.start} out of range for "${v.id}" (max: ${ranges[ranges.length-1]?.end})`);
       }
     });
   }, [violations]);

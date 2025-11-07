@@ -76,10 +76,12 @@ export async function POST(request: NextRequest) {
     // Use RAG to build enhanced prompt with real Auburn policies and FAR regulations
     console.log('🔍 [/api/contract/analyze] Building RAG-enhanced prompt');
     
+    console.log('📊 [/api/contract/analyze] Contract text length:', contractText.length);
+    
     let enhancedPrompt;
     try {
       // Get RAG-enhanced prompt with real Auburn policies and FAR regulations
-      enhancedPrompt = await buildEnhancedPrompt(contractText.substring(0, 50000), true);
+      enhancedPrompt = await buildEnhancedPrompt(contractText, true);
       console.log('✅ [/api/contract/analyze] RAG enhancement successful');
     } catch (ragError) {
       console.warn('⚠️ [/api/contract/analyze] RAG enhancement failed, using fallback:', ragError);
@@ -97,14 +99,14 @@ KEY AUBURN POLICIES:
 7. Termination for convenience clause required
 
 CONTRACT TO ANALYZE:
-${contractText.substring(0, 50000)}
+${contractText}
 
 Analyze the contract and identify all compliance issues.`;
     }
 
     // Search for specific FAR violations
     console.log('📋 [/api/contract/analyze] Searching for FAR violations');
-    const farViolations = await searchFARViolations(contractText.substring(0, 10000), 5);
+    const farViolations = await searchFARViolations(contractText, 5);
     
     // Get Auburn policy context for key clauses
     console.log('🏫 [/api/contract/analyze] Getting Auburn policy context');
@@ -203,8 +205,28 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
       if (jsonMatch) {
         const analysisResult = JSON.parse(jsonMatch[0]);
         
+        // Re-slice problematicText using indices to ensure exact match
+        const safeViolations = (analysisResult.violations || []).flatMap((v: any) => {
+          const ok = Number.isInteger(v.start) && Number.isInteger(v.end)
+                  && v.start >= 0 && v.end > v.start && v.end <= contractText.length;
+          if (!ok) {
+            console.log(`⚠️ Skipping violation "${v.id}" - invalid indices (${v.start}-${v.end})`);
+            return [];
+          }
+          
+          const snippet = contractText.slice(v.start, v.end);
+          const wc = snippet.trim().split(/\s+/).length;
+          if (wc < 10) {
+            console.log(`⚠️ Skipping violation "${v.id}" - snippet too short (${wc} words)`);
+            return [];
+          }
+          
+          return [{ ...v, problematicText: snippet }];
+        });
+        
         console.log('✅ [/api/contract/analyze] Analysis complete with RAG:', {
-          violations: analysisResult.violations?.length || 0,
+          totalViolations: analysisResult.violations?.length || 0,
+          validViolations: safeViolations.length,
           confidence: analysisResult.confidence,
           riskScore: analysisResult.riskScore,
           ragContext: analysisResult.ragContext
@@ -212,6 +234,7 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
         
         return NextResponse.json({
           ...analysisResult,
+          violations: safeViolations,
           method: 'rag-enhanced',
           model: OPENROUTER_MODEL
         });
