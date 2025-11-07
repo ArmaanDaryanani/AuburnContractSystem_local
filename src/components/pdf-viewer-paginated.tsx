@@ -175,6 +175,8 @@ export function PDFViewerPaginated({
           spans[i].classList.add('pdf-highlight');
         }
         console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${currentPage}`);
+        console.log(`📍 Highlighted text:`, spans.slice(startSpan, endSpan + 1).map(s => s.textContent).join(''));
+        console.log(`🎨 First span classes:`, spans[startSpan].className);
       }
     });
   }, [tokens, currentPage]);
