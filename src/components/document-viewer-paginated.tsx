@@ -362,13 +362,9 @@ export function DocumentViewerPaginated({
       )}
 
       {/* Document viewer with pagination */}
-      <CardContent className="p-0 flex flex-col h-full">
-        <div 
-          ref={viewerRef} 
-          className="document-viewer-paginated flex-1 overflow-hidden"
-          style={{ height: violations.length > 0 ? 'calc(100vh - 250px)' : 'calc(100vh - 190px)' }}
-        >
-          <div className="bg-gray-100 h-full">
+      <CardContent className="p-0 relative h-full">
+        <div ref={viewerRef} className="document-viewer-paginated h-full">
+          <div className="bg-gray-100" style={{ height: violations.length > 0 ? 'calc(100vh - 200px)' : 'calc(100vh - 140px)' }}>
             {documentType === DocumentType.DOCX && (
               <DOCXViewerPaginated
                 file={file}
@@ -402,7 +398,7 @@ export function DocumentViewerPaginated({
               </div>
             )}
             {documentType === DocumentType.UNKNOWN && (
-              <div className="flex items-center justify-center h-full bg-gray-50">
+              <div className="flex items-center justify-center h-[750px] bg-gray-50">
                 <div className="text-center">
                   <FileX className="h-12 w-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-sm text-gray-600">Unsupported file format</p>
@@ -414,14 +410,14 @@ export function DocumentViewerPaginated({
 
         {/* Page Navigation Footer */}
         {totalPages > 0 && (
-          <div className="flex-shrink-0 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200 px-4 py-3">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200 px-4 py-2">
             <div className="flex items-center justify-center gap-4">
               <Button
                 onClick={handlePreviousPage}
                 disabled={currentPage === 1}
                 variant="ghost"
                 size="sm"
-                className="h-9 w-9 p-0 disabled:opacity-30 hover:bg-gray-100"
+                className="h-8 w-8 p-0 disabled:opacity-30"
               >
                 <ChevronLeft className="h-5 w-5" />
               </Button>
@@ -436,10 +432,10 @@ export function DocumentViewerPaginated({
                     const page = parseInt(e.target.value) || 1;
                     setCurrentPage(Math.min(Math.max(1, page), totalPages));
                   }}
-                  className="w-14 px-2 py-1.5 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                  className="w-12 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
                 />
-                <span className="text-sm text-gray-400">/</span>
-                <span className="text-sm font-medium text-gray-700 min-w-[2rem]">
+                <span className="text-sm text-gray-500">/</span>
+                <span className="text-sm font-medium text-gray-700 min-w-[2rem] text-center">
                   {totalPages}
                 </span>
               </div>
@@ -449,7 +445,7 @@ export function DocumentViewerPaginated({
                 disabled={currentPage >= totalPages}
                 variant="ghost"
                 size="sm"
-                className="h-9 w-9 p-0 disabled:opacity-30 hover:bg-gray-100"
+                className="h-8 w-8 p-0 disabled:opacity-30"
               >
                 <ChevronRight className="h-5 w-5" />
               </Button>
