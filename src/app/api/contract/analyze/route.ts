@@ -130,7 +130,7 @@ Return a JSON response with this EXACT structure:
       "severity": "CRITICAL|HIGH|MEDIUM|LOW",
       "title": "Brief title of violation",
       "description": "Detailed explanation of the issue",
-      "problematicText": "COPY THE EXACT VERBATIM TEXT from the contract word-for-word. This must be a direct quote of at least 10-30 words from the contract that demonstrates the violation. DO NOT paraphrase or summarize - copy the exact text.",
+      "problematicText": "MUST BE 50-150 WORDS of COMPLETE UNTRUNCATED verbatim text copied exactly from the contract above. Include full sentences. Do NOT shorten or truncate - copy the entire relevant section word-for-word.",
       "auburnPolicy": "Which Auburn policy is violated",
       "farReference": "FAR clause number if applicable",
       "suggestion": "Auburn-compliant replacement text",
@@ -146,7 +146,12 @@ Return a JSON response with this EXACT structure:
   }
 }
 
-CRITICAL: For each violation, the "problematicText" field MUST contain the EXACT VERBATIM text from the contract. Copy it word-for-word from the contract text above. This is essential for highlighting to work.
+CRITICAL REQUIREMENTS FOR problematicText:
+1. Must be 50-150 words verbatim from the contract
+2. Must NOT be truncated - copy complete sentences/paragraphs
+3. Must match the contract text EXACTLY character-for-character
+4. Include enough context so the quote is findable in the PDF
+5. Do NOT summarize or paraphrase - this breaks the highlighting system
 
 Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
 
