@@ -165,7 +165,7 @@ export default function ContractReviewSimplified() {
       setAnalysisProgress(100);
       
       // Filter to only show violations that can be highlighted in the PDF
-      const validViolations = (result.violations || []).filter(v => {
+      const validViolations = (result.violations || []).filter((v: ViolationDetail) => {
         if (!v.problematicText || v.problematicText === 'MISSING_CLAUSE') {
           return true; // Keep missing clause violations
         }
