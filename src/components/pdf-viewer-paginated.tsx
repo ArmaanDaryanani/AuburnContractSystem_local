@@ -98,9 +98,9 @@ export function PDFViewerPaginated({
   ).length;
 
   return (
-    <div className="bg-white h-full flex flex-col">
+    <div className="bg-white rounded-lg overflow-auto" style={{ height: '750px' }}>
       {violationCount > 0 && (
-        <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 flex-shrink-0">
+        <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400">
           <p className="text-sm text-yellow-800 font-medium">
             {violationCount} issue{violationCount !== 1 ? 's' : ''} detected
           </p>
@@ -110,7 +110,7 @@ export function PDFViewerPaginated({
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center overflow-hidden bg-gray-50">
+      <div className="flex items-center justify-center" style={{ height: violationCount > 0 ? 'calc(100% - 80px)' : '100%' }}>
         <Document
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
