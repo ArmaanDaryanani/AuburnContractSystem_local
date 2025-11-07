@@ -290,9 +290,9 @@ export function DocumentViewerPaginated({
 
   return (
     <>
-      <Card className="border-gray-200 shadow-sm h-full">
+      <Card className="border-gray-200 shadow-sm h-full flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-b border-gray-200 p-4">
+        <div className="border-b border-gray-200 p-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 text-gray-600" />
@@ -378,17 +378,19 @@ export function DocumentViewerPaginated({
 
       {/* Violations Bar */}
       {violations.length > 0 && (
-        <ViolationsBar 
+        <div className="flex-shrink-0">
+          <ViolationsBar 
           violations={violations}
           onViolationClick={handleViolationClick}
           selectedViolationId={activeViolationId}
-        />
+          />
+        </div>
       )}
 
       {/* Document viewer with pagination */}
-      <CardContent className="p-0 relative h-full">
-        <div ref={viewerRef} className="document-viewer-paginated h-full">
-          <div className="bg-gray-100" style={{ height: violations.length > 0 ? 'calc(100vh - 200px)' : 'calc(100vh - 140px)' }}>
+      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+        <div ref={viewerRef} className="document-viewer-paginated flex-1 min-h-0">
+          <div className="bg-gray-100 h-full w-full">
             {documentType === DocumentType.DOCX && (
               <DOCXViewerPaginated
                 file={file}
@@ -434,77 +436,45 @@ export function DocumentViewerPaginated({
 
         {/* Page Navigation Footer */}
         {totalPages > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleFirstPage}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="First page"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2"
-                  title="Previous"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-              </div>
+          <div className="h-14 flex-shrink-0 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200 px-4">
+            <div className="h-full flex items-center justify-center gap-4">
+              <Button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0 disabled:opacity-30 hover:bg-gray-100"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
 
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-700">
-                  {getPageDisplay()}
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    const page = parseInt(e.target.value) || 1;
+                    setCurrentPage(Math.min(Math.max(1, page), totalPages));
+                  }}
+                  className="w-14 px-2 py-1.5 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <span className="text-sm text-gray-400">/</span>
+                <span className="text-sm font-medium text-gray-700 min-w-[2rem]">
+                  {totalPages}
                 </span>
-                
-                {/* Quick page jump input */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Go to:</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max={totalPages}
-                    value={currentPage}
-                    onChange={(e) => {
-                      const page = parseInt(e.target.value) || 1;
-                      setCurrentPage(Math.min(Math.max(1, page), totalPages));
-                    }}
-                    className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleNextPage}
-                  disabled={currentPage >= (showSinglePage ? totalPages : totalPages - 1)}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2"
-                  title="Next"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-                <Button
-                  onClick={handleLastPage}
-                  disabled={currentPage >= (showSinglePage ? totalPages : totalPages - 1)}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="Last page"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                onClick={handleNextPage}
+                disabled={currentPage >= totalPages}
+                variant="ghost"
+                size="sm"
+                className="h-9 w-9 p-0 disabled:opacity-30 hover:bg-gray-100"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         )}
