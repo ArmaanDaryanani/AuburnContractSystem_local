@@ -35,6 +35,8 @@ export function PDFViewerPaginated({
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [numPages, setNumPages] = useState<number>(0);
   const [isExtracting, setIsExtracting] = useState(false);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (file) {
@@ -43,6 +45,18 @@ export function PDFViewerPaginated({
       return () => URL.revokeObjectURL(url);
     }
   }, [file]);
+
+  useEffect(() => {
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth - 32); // subtract padding
+      }
+    };
+
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
+  }, []);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -110,26 +124,23 @@ export function PDFViewerPaginated({
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center overflow-auto bg-gray-50 p-4">
-        <div className="max-h-full">
-          <Document
-            file={pdfUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            loading={
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
-              </div>
-            }
-          >
-            <Page
-              pageNumber={currentPage}
-              scale={zoom / 100}
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-              className="max-h-full"
-            />
-          </Document>
-        </div>
+      <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-auto bg-gray-50 p-4">
+        <Document
+          file={pdfUrl}
+          onLoadSuccess={onDocumentLoadSuccess}
+          loading={
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
+            </div>
+          }
+        >
+          <Page
+            pageNumber={currentPage}
+            width={containerWidth ? containerWidth * (zoom / 100) : undefined}
+            renderTextLayer={true}
+            renderAnnotationLayer={true}
+          />
+        </Document>
       </div>
     </div>
   );
