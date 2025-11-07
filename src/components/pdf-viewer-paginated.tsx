@@ -197,7 +197,13 @@ export function PDFViewerPaginated({
       const localStart = Math.max(0, v.start! - gStart);
       const localEnd = Math.min(pageText.length, v.end! - gStart);
       
-      console.log(`🔍 Violation "${v.id}": global=${v.start}-${v.end}, local=${localStart}-${localEnd}`);
+      console.log(`🔍 Violation "${v.id}":`, {
+        global: `${v.start}-${v.end}`,
+        pageRange: `${gStart}-${gEnd}`,
+        local: `${localStart}-${localEnd}`,
+        pageTextLength: pageText.length,
+        snippet: pageText.slice(localStart, localEnd).substring(0, 100)
+      });
       
       if (localEnd <= localStart) {
         console.log(`❌ Skipping "${v.id}" - empty range`);
@@ -213,14 +219,16 @@ export function PDFViewerPaginated({
         }
       }
       
-      console.log(`🎯 Violation "${v.id}": highlighting items [${itemIndices.join(', ')}]`);
+      console.log(`🎯 Violation "${v.id}": found ${itemIndices.length} items [${itemIndices.slice(0, 10).join(', ')}${itemIndices.length > 10 ? '...' : ''}]`);
       
       if (itemIndices.length === 0) {
         console.log(`❌ No items found for "${v.id}"`);
+        console.log(`Debug: itemOffsets range:`, itemOffsets[0], '...', itemOffsets[itemOffsets.length - 1]);
         return;
       }
       
       // Highlight corresponding spans by index
+      let highlighted = 0;
       for (const i of itemIndices) {
         const el = spans[i];
         if (!el) {
@@ -235,9 +243,10 @@ export function PDFViewerPaginated({
         el.setAttribute('data-violation-id', v.id);
         
         if (!firstHighlightedSpan) firstHighlightedSpan = el;
+        highlighted++;
       }
       
-      console.log(`✨ Highlighted ${itemIndices.length} spans on page ${pageIdx + 1} for violation "${v.id}"`);
+      console.log(`✨ Highlighted ${highlighted} spans on page ${pageIdx + 1} for violation "${v.id}"`);
     });
     
     // Fix #6: Gentle auto-scroll to first highlighted span
@@ -247,75 +256,35 @@ export function PDFViewerPaginated({
   }, [violations]);
 
   useEffect(() => {
-    console.log('🎨 Highlight effect triggered:', {
-      pdfUrl: !!pdfUrl,
-      currentPage,
-      violationCount,
-      rangesLength: rangesRef.current.length,
-      violations: violations.length
-    });
-    
     if (!pdfUrl || violationCount === 0 || rangesRef.current.length === 0) {
-      console.log('⏸️ Skipping highlight:', { noPdfUrl: !pdfUrl, noViolations: violationCount === 0, noRanges: rangesRef.current.length === 0 });
       return;
     }
     
-    const pageEl = document.querySelector(
-      `.react-pdf__Page[data-page-number="${currentPage}"]`
-    ) as HTMLElement | null;
-    const textLayer = pageEl?.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
-    
-    if (!textLayer) {
-      console.log(`⚠️ No text layer on page ${currentPage}`);
-      return;
-    }
-    
-    const pageIdx = currentPage - 1; // Convert to 0-based index
-    const ensureSpans = () => Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
-    let spans = ensureSpans();
-    
-    console.log(`📄 Page ${currentPage}: Found ${spans.length} spans`);
-    
-    if (spans.length === 0) {
-      console.log('⏳ Waiting for spans to populate via MutationObserver + polling');
-      let attempts = 0;
-      const maxAttempts = 50;
+    // Small delay to let react-pdf render the page
+    const timeout = setTimeout(() => {
+      const pageEl = document.querySelector(
+        `.react-pdf__Page[data-page-number="${currentPage}"]`
+      ) as HTMLElement | null;
+      const textLayer = pageEl?.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
       
-      const mo = new MutationObserver(() => {
-        const newSpans = ensureSpans();
-        console.log(`🔄 MutationObserver fired: ${newSpans.length} spans (attempt ${attempts + 1})`);
-        if (newSpans.length > 0) {
-          console.log(`✅ Spans populated: ${newSpans.length} spans`);
-          mo.disconnect();
-          runHighlight(newSpans, pageIdx);
-        }
-      });
-      mo.observe(textLayer, { childList: true, subtree: true });
+      if (!textLayer) {
+        console.log(`⚠️ No text layer on page ${currentPage}`);
+        return;
+      }
       
-      const pollInterval = setInterval(() => {
-        attempts++;
-        const newSpans = ensureSpans();
-        console.log(`🔍 Polling attempt ${attempts}: ${newSpans.length} spans`);
-        if (newSpans.length > 0) {
-          console.log(`✅ Spans found via polling: ${newSpans.length} spans`);
-          clearInterval(pollInterval);
-          mo.disconnect();
-          runHighlight(newSpans, pageIdx);
-        } else if (attempts >= maxAttempts) {
-          console.warn(`⚠️ Gave up waiting for spans after ${maxAttempts} attempts`);
-          clearInterval(pollInterval);
-          mo.disconnect();
-        }
-      }, 100);
+      const pageIdx = currentPage - 1;
+      const spans = Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
       
-      return () => {
-        mo.disconnect();
-        clearInterval(pollInterval);
-      };
-    }
+      if (spans.length === 0) {
+        console.log(`⏳ Page ${currentPage}: Text layer not ready yet, waiting...`);
+        return;
+      }
+      
+      console.log(`✅ Page ${currentPage}: Found ${spans.length} spans, highlighting...`);
+      runHighlight(spans, pageIdx);
+    }, 150);
     
-    console.log(`▶️ Calling runHighlight for page ${currentPage} with ${spans.length} spans`);
-    runHighlight(spans, pageIdx);
+    return () => clearTimeout(timeout);
   }, [pdfUrl, currentPage, violationCount, zoom, runHighlight, violations]);
 
   if (!pdfUrl) {
