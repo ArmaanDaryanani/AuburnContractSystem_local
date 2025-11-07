@@ -68,7 +68,62 @@
   }
 }
 
-/* Violation Highlighting Styles */
+/* mark.js Highlighting Styles for Contract Violations */
+mark.highlight-critical {
+  background-color: rgba(239, 68, 68, 0.3);
+  border-bottom: 2px solid rgb(239, 68, 68);
+  padding: 2px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+mark.highlight-critical:hover {
+  background-color: rgba(239, 68, 68, 0.5);
+}
+
+mark.highlight-high {
+  background-color: rgba(249, 115, 22, 0.3);
+  border-bottom: 2px solid rgb(249, 115, 22);
+  padding: 2px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+mark.highlight-high:hover {
+  background-color: rgba(249, 115, 22, 0.5);
+}
+
+mark.highlight-medium {
+  background-color: rgba(234, 179, 8, 0.3);
+  border-bottom: 2px solid rgb(234, 179, 8);
+  padding: 2px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+mark.highlight-medium:hover {
+  background-color: rgba(234, 179, 8, 0.5);
+}
+
+mark.highlight-low {
+  background-color: rgba(59, 130, 246, 0.3);
+  border-bottom: 2px solid rgb(59, 130, 246);
+  padding: 2px 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+mark.highlight-low:hover {
+  background-color: rgba(59, 130, 246, 0.5);
+}
+
+mark.highlight-selected {
+  font-weight: 600;
+  ring: 2px solid currentColor;
+  transform: scale(1.02);
+}
+
+/* Old violation styles - keeping for backwards compat */
 .highlighted-text {
   background-color: rgba(255, 235, 59, 0.4) !important;
   padding: 2px 4px !important;

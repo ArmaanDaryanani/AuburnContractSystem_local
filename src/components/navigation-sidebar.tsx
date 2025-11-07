@@ -20,36 +20,8 @@ const navigation = [
     name: "Contract Review",
     href: "/contract-review",
     icon: FileSearch,
-    description: "Analyze individual contracts",
-    badge: "CORE",
-  },
-  {
-    name: "Batch Audit",
-    href: "/batch-audit",
-    icon: FolderOpen,
-    description: "Process multiple contracts",
-    badge: null,
-  },
-  {
-    name: "FAR Matrix",
-    href: "/far-matrix",
-    icon: Scale,
-    description: "Federal Acquisition Regulations",
-    badge: null,
-  },
-  {
-    name: "Auburn Policies",
-    href: "/auburn-policies",
-    icon: Shield,
-    description: "University compliance rules",
-    badge: null,
-  },
-  {
-    name: "Knowledge Base",
-    href: "/knowledge-base",
-    icon: Database,
-    description: "Contract templates & guides",
-    badge: null,
+    description: "AI-powered contract compliance analysis",
+    badge: "AI",
   },
 ];
 

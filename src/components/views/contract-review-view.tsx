@@ -1113,74 +1113,167 @@ ${contractText.substring(0, 1000)}${contractText.length > 1000 ? '...' : ''}
               
               <div 
                 ref={violationsListRef}
-                className="space-y-3 overflow-y-auto pr-2 pb-6 flex-1 relative"
+                className="space-y-4 overflow-y-auto pr-2 pb-6 flex-1 relative"
               >
-                {violations.map((violation, index) => {
-                  const isSelected = selectedViolationId === violation.id;
-                  const isDimmed = selectedViolationId && selectedViolationId !== violation.id;
+                {/* Missing Required Clauses Section */}
+                {(() => {
+                  const missingViolations = violations.filter(v => 
+                    v.problematicText === 'MISSING_CLAUSE' || 
+                    (v as any).isMissingClause === true
+                  );
+                  
+                  if (missingViolations.length === 0) return null;
                   
                   return (
-                    <Card 
-                      id={`violation-card-${violation.id}`}
-                      key={violation.id} 
-                      className={cn(
-                        "border border-gray-200 shadow-sm cursor-pointer transition-all duration-300",
-                        isSelected && "bg-gray-50",
-                        isDimmed && "opacity-40 grayscale-[20%]",
-                        "hover:opacity-100"
-                      )}
-                      onClick={() => handleViolationSelect(violation.id)}
-                    >
-                      <CardContent className="p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          {violation.severity === "CRITICAL" && (
-                            <AlertCircle className="h-4 w-4 text-red-500" />
-                          )}
-                          {violation.severity === "HIGH" && (
-                            <AlertTriangle className="h-4 w-4 text-orange-500" />
-                          )}
-                          {violation.severity === "MEDIUM" && (
-                            <AlertTriangle className="h-4 w-4 text-yellow-500" />
-                          )}
-                          {violation.severity === "LOW" && (
-                            <CheckCircle className="h-4 w-4 text-blue-500" />
-                          )}
-                          <span className="text-sm font-medium text-gray-900">
-                            {violation.type}
-                          </span>
-                        </div>
-                        <Badge 
-                          variant={
-                            violation.severity === "CRITICAL" ? "destructive" :
-                            violation.severity === "HIGH" ? "secondary" :
-                            "outline"
-                          }
-                          className="text-xs"
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 px-2 py-1 bg-amber-50 border-l-4 border-amber-400 rounded">
+                        <Shield className="h-4 w-4 text-amber-600" />
+                        <h3 className="text-xs font-semibold text-amber-900">
+                          Missing Required Clauses ({missingViolations.length})
+                        </h3>
+                      </div>
+                      
+                      {missingViolations.map((violation) => (
+                        <Card 
+                          id={`violation-card-${violation.id}`}
+                          key={violation.id} 
+                          className="border border-amber-200 bg-amber-50/30 shadow-sm"
                         >
-                          {violation.severity}
-                        </Badge>
-                      </div>
-                      
-                      <p className="text-xs text-gray-600 mb-2">
-                        {violation.description}
-                      </p>
-                      
-                      {violation.farReference && (
-                        <div className="text-xs text-gray-500 mb-2">
-                          Reference: {violation.farReference}
-                        </div>
-                      )}
-                      
-                      <div className="bg-green-50 border border-green-200 rounded-md p-2 mt-2">
-                        <p className="text-xs text-green-800">
-                          <strong>Suggestion:</strong> {violation.suggestion}
-                        </p>
-                      </div>
-                    </CardContent>
-                  </Card>
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 text-amber-600" />
+                                <span className="text-xs font-medium text-gray-900">
+                                  {violation.type}
+                                </span>
+                              </div>
+                              <Badge variant="outline" className="text-xs bg-white">
+                                {violation.severity}
+                              </Badge>
+                            </div>
+                            
+                            <p className="text-xs text-gray-700 mb-2">
+                              {violation.description}
+                            </p>
+                            
+                            {violation.farReference && (
+                              <div className="text-xs text-gray-600 mb-2 font-mono bg-white px-2 py-1 rounded border border-amber-200">
+                                {violation.farReference}
+                              </div>
+                            )}
+                            
+                            <div className="bg-white border border-green-200 rounded-md p-2 mt-2">
+                              <p className="text-xs text-green-800">
+                                <strong>Add this clause:</strong> {violation.suggestion}
+                              </p>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   );
-                })}
+                })()}
+                
+                {/* Problematic Language Section */}
+                {(() => {
+                  const problematicViolations = violations.filter(v => 
+                    v.problematicText && 
+                    v.problematicText !== 'MISSING_CLAUSE' &&
+                    (v as any).isMissingClause !== true
+                  );
+                  
+                  if (problematicViolations.length === 0) return null;
+                  
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 px-2 py-1 bg-red-50 border-l-4 border-red-400 rounded">
+                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                        <h3 className="text-xs font-semibold text-red-900">
+                          Problematic Language ({problematicViolations.length})
+                        </h3>
+                      </div>
+                      
+                      {problematicViolations.map((violation) => {
+                        const isSelected = selectedViolationId === violation.id;
+                        const isDimmed = selectedViolationId && selectedViolationId !== violation.id;
+                        
+                        return (
+                          <Card 
+                            id={`violation-card-${violation.id}`}
+                            key={violation.id} 
+                            className={cn(
+                              "border border-gray-200 shadow-sm cursor-pointer transition-all duration-300",
+                              isSelected && "bg-gray-50 ring-2 ring-gray-400",
+                              isDimmed && "opacity-40 grayscale-[20%]",
+                              "hover:opacity-100 hover:shadow-md"
+                            )}
+                            onClick={() => handleViolationSelect(violation.id)}
+                          >
+                            <CardContent className="p-3">
+                              <div className="flex items-start justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  {violation.severity === "CRITICAL" && (
+                                    <AlertCircle className="h-4 w-4 text-red-500" />
+                                  )}
+                                  {violation.severity === "HIGH" && (
+                                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                                  )}
+                                  {violation.severity === "MEDIUM" && (
+                                    <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                                  )}
+                                  {violation.severity === "LOW" && (
+                                    <CheckCircle className="h-4 w-4 text-blue-500" />
+                                  )}
+                                  <span className="text-xs font-medium text-gray-900">
+                                    {violation.type}
+                                  </span>
+                                </div>
+                                <Badge 
+                                  variant={
+                                    violation.severity === "CRITICAL" ? "destructive" :
+                                    violation.severity === "HIGH" ? "secondary" :
+                                    "outline"
+                                  }
+                                  className="text-xs"
+                                >
+                                  {violation.severity}
+                                </Badge>
+                              </div>
+                              
+                              <p className="text-xs text-gray-600 mb-2">
+                                {violation.description}
+                              </p>
+                              
+                              {violation.problematicText && violation.problematicText.length < 150 && (
+                                <div className="text-xs text-gray-700 mb-2 font-mono bg-gray-50 px-2 py-1 rounded border border-gray-200">
+                                  "{violation.problematicText.substring(0, 100)}{violation.problematicText.length > 100 ? '...' : ''}"
+                                </div>
+                              )}
+                              
+                              {violation.farReference && (
+                                <div className="text-xs text-gray-500 mb-2">
+                                  Reference: {violation.farReference}
+                                </div>
+                              )}
+                              
+                              <div className="bg-green-50 border border-green-200 rounded-md p-2 mt-2">
+                                <p className="text-xs text-green-800">
+                                  <strong>Suggestion:</strong> {violation.suggestion}
+                                </p>
+                              </div>
+                              
+                              {isSelected && (
+                                <div className="mt-2 text-xs text-gray-500 italic">
+                                  Click highlighted text in document →
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ) : (

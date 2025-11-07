@@ -18,31 +18,6 @@ const navigation = [
     href: "/",
     icon: FileText,
   },
-  {
-    name: "Batch Audit",
-    href: "/batch-audit",
-    icon: FolderOpen,
-  },
-  {
-    name: "Metrics",
-    href: "/metrics",
-    icon: BarChart3,
-  },
-  {
-    name: "FAR Matrix",
-    href: "/far-matrix",
-    icon: Scale,
-  },
-  {
-    name: "Auburn Policies",
-    href: "/auburn-policies",
-    icon: Shield,
-  },
-  {
-    name: "Knowledge Base",
-    href: "/knowledge-base",
-    icon: Database,
-  },
 ];
 
 export function NavigationMinimal() {

@@ -5,6 +5,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { generateEmbedding } from './document-ingestion';
+import { fuzzySearchClause } from './fuzzy-matcher';
 
 // Initialize Supabase client
 let supabase: ReturnType<typeof createClient> | null = null;
@@ -52,6 +53,7 @@ interface Violation {
   confidence: number;
   suggested_alternative?: string;
   policy_reference?: string;
+  problematicText?: string;  // Exact text from contract, or 'MISSING_CLAUSE'
 }
 
 export interface ComplianceCheckResult {
@@ -163,22 +165,41 @@ export async function performComplianceCheck(
   let farRequirements: FARRequirement[] = [];
   
   try {
-    // Check FAR compliance
+    // Check FAR compliance - NEW LOGIC: detect ABSENCE
     if (checkFAR) {
       farRequirements = await searchFARRequirements(contractText, undefined, 15);
       
       // Analyze FAR requirements for potential violations
       for (const req of farRequirements) {
-        if (req.similarity > minConfidence && req.risk_level !== 'LOW') {
+        // Use fuzzy search to check if clause exists in contract
+        const fuzzyMatch = fuzzySearchClause(contractText, req.requirement_text, 0.4);
+        
+        // Clause is MISSING if no match found
+        if (!fuzzyMatch.matched || fuzzyMatch.score > 0.4) {
+          if (req.risk_level === 'CRITICAL' || req.risk_level === 'HIGH') {
+            violations.push({
+              type: 'FAR_REQUIREMENT',
+              far_section: req.far_section,
+              term_type: undefined,
+              description: `Missing required FAR ${req.far_section} clause: ${req.requirement_text}`,
+              severity: (req.risk_level === 'CRITICAL' ? 'CRITICAL' : 'HIGH') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
+              confidence: 0.9,
+              suggested_alternative: req.auburn_policy,
+              policy_reference: req.auburn_policy,
+              problematicText: 'MISSING_CLAUSE' // No span to highlight
+            });
+          }
+        }
+        // Clause found but might have non-compliant language
+        else if (fuzzyMatch.score > 0.2 && fuzzyMatch.score <= 0.4) {
           violations.push({
-            type: 'FAR_REQUIREMENT',
+            type: 'FAR_COMPLIANCE_ISSUE',
             far_section: req.far_section,
             term_type: undefined,
-            description: `Potential FAR ${req.far_section} compliance issue: ${req.requirement_text}`,
-            severity: (req.risk_level === 'CRITICAL' ? 'CRITICAL' : 
-                     req.risk_level === 'HIGH' ? 'HIGH' : 'MEDIUM') as 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW',
-            confidence: req.similarity,
-            suggested_alternative: undefined,
+            description: `Non-compliant FAR ${req.far_section} language detected`,
+            severity: 'MEDIUM',
+            confidence: 1 - fuzzyMatch.score,
+            problematicText: fuzzyMatch.exactText, // ACTUAL text from contract
             policy_reference: req.auburn_policy
           });
         }
