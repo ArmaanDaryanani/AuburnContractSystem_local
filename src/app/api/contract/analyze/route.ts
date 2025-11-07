@@ -223,7 +223,7 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
         auburnPolicy: "State entity restrictions - Auburn Contract Management Guide",
         farReference: "FAR 28.106",
         confidence: 0.95,
-        clause: text.match(/.{0,100}(indemnif|hold harmless).{0,100}/i)?.[0] || "Indemnification clause found"
+        problematicText: text.match(/.{0,100}(indemnif|hold harmless).{0,100}/i)?.[0] || "Indemnification clause found"
       });
     }
     
@@ -237,7 +237,7 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
         auburnPolicy: "Faculty IP retention policy",
         farReference: "FAR 27.402",
         confidence: 0.85,
-        clause: text.match(/.{0,100}(intellectual property|work product).{0,100}/i)?.[0] || "IP clause found"
+        problematicText: text.match(/.{0,100}(intellectual property|work product).{0,100}/i)?.[0] || "IP clause found"
       });
     }
     
@@ -254,7 +254,7 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
         auburnPolicy: "Auburn General Terms and Conditions - Payment Terms",
         farReference: "FAR 32.906",
         confidence: 0.90,
-        clause: text.match(/.{0,100}(payment|ten \(10\) business days).{0,100}/i)?.[0] || "Payment clause found",
+        problematicText: text.match(/.{0,100}(payment|ten \(10\) business days).{0,100}/i)?.[0] || "Payment clause found",
         suggestion: "Payment shall be made NET 30 days from receipt of properly submitted invoice"
       });
     }
@@ -270,7 +270,7 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
         auburnPolicy: "Auburn Self-Insurance Policy",
         farReference: "FAR 28.301",
         confidence: 0.85,
-        clause: text.match(/.{0,100}insurance.{0,100}/i)?.[0] || "Insurance clause found"
+        problematicText: text.match(/.{0,100}insurance.{0,100}/i)?.[0] || "Insurance clause found"
       });
     }
     

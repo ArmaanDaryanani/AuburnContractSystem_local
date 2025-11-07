@@ -18,23 +18,6 @@ interface PDFViewerPaginatedProps {
   onTextExtracted?: (text: string) => void;
 }
 
-function escapeRegExp(s: string) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
-function makeHighlighter(tokens: string[]) {
-  const rx = tokens.length
-    ? new RegExp(`(${tokens.map(t => escapeRegExp(t)).join("|")})`, "gi")
-    : null;
-
-  return ({ str }: { str: string }) => {
-    if (!rx) return str;
-    return str.split(rx).map((chunk, i) =>
-      rx.test(chunk) ? `<mark class="bg-yellow-200 rounded px-0.5">${chunk}</mark>` : chunk
-    ).join("");
-  };
-}
-
 export function PDFViewerPaginated({
   file,
   violations,
@@ -112,10 +95,39 @@ export function PDFViewerPaginated({
   ).length;
 
   const tokens = violations
-    ?.map(v => v.problematicText || v.clause)
+    ?.map(v => v.problematicText)
     .filter(Boolean)
     .filter(t => t !== 'MISSING_CLAUSE')
     .slice(0, 20) as string[];
+
+  useEffect(() => {
+    if (!pdfUrl || violationCount === 0) return;
+    
+    const highlightTimeout = setTimeout(() => {
+      const textLayer = document.querySelector('.react-pdf__Page__textContent');
+      if (!textLayer) return;
+      
+      const textSpans = textLayer.querySelectorAll('span');
+      
+      tokens.forEach(token => {
+        if (!token) return;
+        const searchTerms = token.toLowerCase().split(/\s+/).filter(t => t.length > 3);
+        
+        textSpans.forEach(span => {
+          const spanText = span.textContent?.toLowerCase() || '';
+          const hasMatch = searchTerms.some(term => spanText.includes(term));
+          
+          if (hasMatch) {
+            span.style.backgroundColor = '#fef08a';
+            span.style.borderRadius = '2px';
+            span.style.padding = '1px 2px';
+          }
+        });
+      });
+    }, 500);
+    
+    return () => clearTimeout(highlightTimeout);
+  }, [pdfUrl, currentPage, violationCount, tokens]);
 
   return (
     <div className="bg-white h-full flex flex-col overflow-hidden">
