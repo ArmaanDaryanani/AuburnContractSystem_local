@@ -29,7 +29,7 @@ export function ViolationPopup({ violation, onClose, position }: ViolationPopupP
       onClick={onClose}
     >
       <div 
-        className={`relative max-w-lg w-full mx-4 p-6 rounded-lg border-2 shadow-xl ${getSeverityColor(violation.severity || 'LOW')}`}
+        className={`relative max-w-lg w-full mx-4 p-6 rounded-lg border-2 shadow-xl max-h-[80vh] overflow-y-auto ${getSeverityColor(violation.severity || 'LOW')}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button

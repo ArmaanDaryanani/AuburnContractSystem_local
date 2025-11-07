@@ -231,7 +231,7 @@ export function PDFViewerPaginated({
         const spanText = span.textContent?.trim() || '';
         if (spanText.length > 0 && expectedTexts.has(spanText)) {
           span.classList.add('pdf-highlight');
-          span.style.backgroundColor = 'rgba(255, 200, 200, 0.3)';
+          span.style.backgroundColor = 'rgba(255, 182, 193, 0.4)';
           span.style.boxShadow = 'none';
           span.style.borderRadius = '0';
           span.style.mixBlendMode = 'multiply';
