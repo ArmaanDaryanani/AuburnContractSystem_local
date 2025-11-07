@@ -98,27 +98,7 @@ export function PDFViewerPaginated({
         }
 
         pageTextsRef.current = pageTexts;
-
-        const pageBuffers = pageTexts.map(normalizeText);
-        const pageByViolationId = new Map<string, number>();
-
-        violations.forEach(v => {
-          const t = normalizeText(v.problematicText || '');
-          if (!t || t === 'MISSING_CLAUSE') return;
-
-          const pageIdx = pageBuffers.findIndex(pg => 
-            pg.toLowerCase().includes(t.toLowerCase())
-          );
-          
-          if (pageIdx !== -1) {
-            pageByViolationId.set(v.id, pageIdx + 1);
-            console.log(`✅ Found violation "${v.id}" on page ${pageIdx + 1}`);
-          } else {
-            console.log(`⚠️ Violation "${v.id}" not found in PDF text:`, t.substring(0, 50));
-          }
-        });
-        
-        pageByViolationIdRef.current = pageByViolationId;
+        console.log(`📚 Cached ${pageTexts.length} pages of text`);
 
         if (onTextExtracted) {
           onTextExtracted(allText);
@@ -129,7 +109,32 @@ export function PDFViewerPaginated({
     })();
 
     return () => { cancelled = true; };
-  }, [file, onTextExtracted, violations]);
+  }, [file, onTextExtracted]);
+
+  useEffect(() => {
+    if (pageTextsRef.current.length === 0 || violations.length === 0) return;
+    
+    const pageBuffers = pageTextsRef.current.map(normalizeText);
+    const pageByViolationId = new Map<string, number>();
+
+    violations.forEach(v => {
+      const t = normalizeText(v.problematicText || '');
+      if (!t || t === 'MISSING_CLAUSE') return;
+
+      const pageIdx = pageBuffers.findIndex(pg => 
+        pg.toLowerCase().includes(t.toLowerCase())
+      );
+      
+      if (pageIdx !== -1) {
+        pageByViolationId.set(v.id, pageIdx + 1);
+        console.log(`✅ Found violation "${v.id}" on page ${pageIdx + 1}:`, t.substring(0, 50));
+      } else {
+        console.log(`⚠️ Violation "${v.id}" not found in PDF text:`, t.substring(0, 50));
+      }
+    });
+    
+    pageByViolationIdRef.current = pageByViolationId;
+  }, [violations]);
 
   useEffect(() => {
     if (!pdfUrl || violationCount === 0 || tokens.length === 0) return;
