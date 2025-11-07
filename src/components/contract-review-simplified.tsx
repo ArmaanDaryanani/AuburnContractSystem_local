@@ -202,8 +202,8 @@ export default function ContractReviewSimplified() {
   };
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
-      <div className={`${file ? 'flex-1 flex flex-col min-h-0' : 'max-w-7xl mx-auto p-6'}`}>
+    <div className="min-h-screen bg-gray-50">
+      <div className={`${file ? 'max-w-full' : 'max-w-7xl mx-auto'} ${file ? 'p-0' : 'p-6'}`}>
         {/* Header - Only show when no document */}
         {!file && (
           <div className="mb-6">
@@ -274,19 +274,17 @@ export default function ContractReviewSimplified() {
                 </CardContent>
               </Card>
             ) : (
-              <div className="h-full flex flex-col min-h-0">
-                <DocumentViewerPaginated
-                  file={file}
-                  violations={violations}
-                  onAnalyze={analyzeContract}
-                  isAnalyzing={isAnalyzing}
-                  onTextExtracted={(text) => {
-                    console.log('📄 Text extracted from DOCX, length:', text.length);
-                    console.log('📄 Sample of extracted text:', text.substring(0, 200));
-                    setContractText(text);
-                  }}
-                />
-              </div>
+              <DocumentViewerPaginated
+                file={file}
+                violations={violations}
+                onAnalyze={analyzeContract}
+                isAnalyzing={isAnalyzing}
+                onTextExtracted={(text) => {
+                  console.log('📄 Text extracted from DOCX, length:', text.length);
+                  console.log('📄 Sample of extracted text:', text.substring(0, 200));
+                  setContractText(text);
+                }}
+              />
             )}
           </div>
         </div>
