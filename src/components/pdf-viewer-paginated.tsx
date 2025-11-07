@@ -41,7 +41,6 @@ export function PDFViewerPaginated({
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [numPages, setNumPages] = useState<number>(0);
   const extractedOnceRef = useRef<string | null>(null);
-  const [renderTick, setRenderTick] = useState(0);
   const pageTextsRef = useRef<string[]>([]);
   const pageByViolationIdRef = useRef<Map<string, number>>(new Map());
 
@@ -58,10 +57,6 @@ export function PDFViewerPaginated({
     setNumPages(numPages);
     onTotalPagesChange(numPages);
   };
-
-  const onRenderSuccess = useCallback(() => {
-    setRenderTick(t => t + 1);
-  }, []);
 
   const violationCount = violations.filter(v => 
     v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
@@ -152,6 +147,11 @@ export function PDFViewerPaginated({
       
       const spans = Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
       
+      if (spans.length === 0) {
+        console.log(`⚠️ No text spans found on page ${currentPage}, retrying...`);
+        return;
+      }
+      
       spans.forEach(s => s.classList.remove('pdf-highlight'));
       
       const spanNorms = spans.map(s => normalizeText(s.textContent || ''));
@@ -190,10 +190,10 @@ export function PDFViewerPaginated({
           console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${currentPage}`);
         }
       });
-    }, 500);
+    }, 800);
     
     return () => clearTimeout(highlightTimeout);
-  }, [pdfUrl, currentPage, violationCount, tokens, renderTick, zoom]);
+  }, [pdfUrl, currentPage, violationCount, tokens, zoom]);
 
   if (!pdfUrl) {
     return (
@@ -232,7 +232,6 @@ export function PDFViewerPaginated({
               scale={zoom / 100}
               renderTextLayer={true}
               renderAnnotationLayer={true}
-              onRenderSuccess={onRenderSuccess}
             />
           </Document>
         </div>
