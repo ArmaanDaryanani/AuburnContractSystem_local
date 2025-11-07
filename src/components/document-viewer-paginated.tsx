@@ -115,14 +115,7 @@ export function DocumentViewerPaginated({
   const handleResetZoom = () => setZoom(100);
 
   const handleFirstPage = () => setCurrentPage(1);
-  const handleLastPage = () => {
-    // For 2-page view, ensure we show the last page properly
-    if (showSinglePage) {
-      setCurrentPage(totalPages);
-    } else {
-      setCurrentPage(totalPages % 2 === 0 ? totalPages - 1 : totalPages);
-    }
-  };
+  const handleLastPage = () => setCurrentPage(totalPages);
 
   const handleViolationClick = (violation: ViolationDetail, index: number) => {
     console.log('Violation clicked:', violation);
@@ -243,19 +236,11 @@ export function DocumentViewerPaginated({
   };
   
   const handlePreviousPage = () => {
-    if (showSinglePage) {
-      setCurrentPage(prev => Math.max(1, prev - 1));
-    } else {
-      setCurrentPage(prev => Math.max(1, prev - 2));
-    }
+    setCurrentPage(prev => Math.max(1, prev - 1));
   };
   
   const handleNextPage = () => {
-    if (showSinglePage) {
-      setCurrentPage(prev => Math.min(totalPages, prev + 1));
-    } else {
-      setCurrentPage(prev => Math.min(totalPages - 1, prev + 2));
-    }
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
   };
 
   const togglePageView = () => {
@@ -266,16 +251,7 @@ export function DocumentViewerPaginated({
     }
   };
 
-  const getPageDisplay = () => {
-    if (showSinglePage) {
-      return `Page ${currentPage} of ${totalPages}`;
-    } else {
-      const rightPage = Math.min(currentPage + 1, totalPages);
-      return currentPage === rightPage 
-        ? `Page ${currentPage} of ${totalPages}`
-        : `Pages ${currentPage}-${rightPage} of ${totalPages}`;
-    }
-  };
+  const getPageDisplay = () => `Page ${currentPage} of ${totalPages}`;
 
   if (!file) {
     return (
@@ -434,77 +410,45 @@ export function DocumentViewerPaginated({
 
         {/* Page Navigation Footer */}
         {totalPages > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleFirstPage}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="First page"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  onClick={handlePreviousPage}
-                  disabled={currentPage === 1}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2"
-                  title="Previous"
-                >
-                  <ChevronLeft className="h-4 w-4 mr-1" />
-                  Previous
-                </Button>
-              </div>
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200 px-4 py-2">
+            <div className="flex items-center justify-center gap-4">
+              <Button
+                onClick={handlePreviousPage}
+                disabled={currentPage === 1}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 disabled:opacity-30"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </Button>
 
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-medium text-gray-700">
-                  {getPageDisplay()}
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  max={totalPages}
+                  value={currentPage}
+                  onChange={(e) => {
+                    const page = parseInt(e.target.value) || 1;
+                    setCurrentPage(Math.min(Math.max(1, page), totalPages));
+                  }}
+                  className="w-12 px-2 py-1 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <span className="text-sm text-gray-500">/</span>
+                <span className="text-sm font-medium text-gray-700 min-w-[2rem] text-center">
+                  {totalPages}
                 </span>
-                
-                {/* Quick page jump input */}
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">Go to:</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max={totalPages}
-                    value={currentPage}
-                    onChange={(e) => {
-                      const page = parseInt(e.target.value) || 1;
-                      setCurrentPage(Math.min(Math.max(1, page), totalPages));
-                    }}
-                    className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
               </div>
 
-              <div className="flex items-center gap-2">
-                <Button
-                  onClick={handleNextPage}
-                  disabled={currentPage >= (showSinglePage ? totalPages : totalPages - 1)}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 px-2"
-                  title="Next"
-                >
-                  Next
-                  <ChevronRight className="h-4 w-4 ml-1" />
-                </Button>
-                <Button
-                  onClick={handleLastPage}
-                  disabled={currentPage >= (showSinglePage ? totalPages : totalPages - 1)}
-                  variant="outline"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  title="Last page"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
-              </div>
+              <Button
+                onClick={handleNextPage}
+                disabled={currentPage >= totalPages}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 disabled:opacity-30"
+              >
+                <ChevronRight className="h-5 w-5" />
+              </Button>
             </div>
           </div>
         )}
