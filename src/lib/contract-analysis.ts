@@ -51,6 +51,8 @@ export interface ViolationDetail {
   confidence: number;
   pageNumber?: number;
   problematicText?: string; // The actual text in the contract that triggered the violation
+  start?: number; // 0-based start index into the contract text
+  end?: number; // 0-based end index (exclusive) into the contract text
   isMissingClause?: boolean; // True for FAR violations about missing required clauses
 }
 

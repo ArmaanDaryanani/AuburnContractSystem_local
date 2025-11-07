@@ -10,16 +10,20 @@ export async function POST(request: NextRequest) {
   
   try {
     const body = await request.json();
-    const { text, fileName, useAI = true } = body;
+    const { text, cachedText, fileName, useAI = true } = body;
+    
+    // Use cachedText (the exact rendered PDF text) if available, otherwise fall back to text
+    const contractText = cachedText || text;
     
     console.log('📄 [/api/contract/analyze] Processing:', {
       fileName,
-      textLength: text?.length,
+      textLength: contractText?.length,
       useAI,
-      hasApiKey: !!OPENROUTER_API_KEY
+      hasApiKey: !!OPENROUTER_API_KEY,
+      usingCachedText: !!cachedText
     });
 
-    if (!text) {
+    if (!contractText) {
       return NextResponse.json(
         { error: 'No contract text provided' },
         { status: 400 }
@@ -30,7 +34,7 @@ export async function POST(request: NextRequest) {
       console.log('⚠️ [/api/contract/analyze] No LLM available, using AI clause detection with FAR/T&C rules');
       
       try {
-        const detections = await runDetections(text, {
+        const detections = await runDetections(contractText, {
           useAI: true,
           minConfidence: 0.3,
           fuzzyThreshold: 0.35,
@@ -75,7 +79,7 @@ export async function POST(request: NextRequest) {
     let enhancedPrompt;
     try {
       // Get RAG-enhanced prompt with real Auburn policies and FAR regulations
-      enhancedPrompt = await buildEnhancedPrompt(text.substring(0, 50000), true);
+      enhancedPrompt = await buildEnhancedPrompt(contractText.substring(0, 50000), true);
       console.log('✅ [/api/contract/analyze] RAG enhancement successful');
     } catch (ragError) {
       console.warn('⚠️ [/api/contract/analyze] RAG enhancement failed, using fallback:', ragError);
@@ -93,21 +97,21 @@ KEY AUBURN POLICIES:
 7. Termination for convenience clause required
 
 CONTRACT TO ANALYZE:
-${text.substring(0, 50000)}
+${contractText.substring(0, 50000)}
 
 Analyze the contract and identify all compliance issues.`;
     }
 
     // Search for specific FAR violations
     console.log('📋 [/api/contract/analyze] Searching for FAR violations');
-    const farViolations = await searchFARViolations(text.substring(0, 10000), 5);
+    const farViolations = await searchFARViolations(contractText.substring(0, 10000), 5);
     
     // Get Auburn policy context for key clauses
     console.log('🏫 [/api/contract/analyze] Getting Auburn policy context');
-    const indemnityContext = text.toLowerCase().includes('indemnif') 
+    const indemnityContext = contractText.toLowerCase().includes('indemnif') 
       ? await getAuburnPolicyContext('indemnification hold harmless', 3)
       : [];
-    const paymentContext = text.toLowerCase().includes('payment') 
+    const paymentContext = contractText.toLowerCase().includes('payment') 
       ? await getAuburnPolicyContext('payment terms net 30', 3)
       : [];
 
@@ -130,7 +134,9 @@ Return a JSON response with this EXACT structure:
       "severity": "CRITICAL|HIGH|MEDIUM|LOW",
       "title": "Brief title of violation",
       "description": "Detailed explanation of the issue",
-      "problematicText": "MUST BE 50-150 WORDS of COMPLETE UNTRUNCATED verbatim text copied EXACTLY CHARACTER-FOR-CHARACTER from the contract above, preserving ALL spacing, line breaks, and formatting. Include full sentences. Do NOT shorten, truncate, or reformat - copy the entire relevant section EXACTLY as it appears, including any unusual spacing like 'D ecember' if that's how it appears in the source.",
+      "problematicText": "Exact substring copied from the contract (50-150 words)",
+      "start": "0-based start index into the contract string",
+      "end": "0-based end index (exclusive) into the contract string",
       "auburnPolicy": "Which Auburn policy is violated",
       "farReference": "FAR clause number if applicable",
       "suggestion": "Auburn-compliant replacement text",
@@ -146,13 +152,12 @@ Return a JSON response with this EXACT structure:
   }
 }
 
-CRITICAL REQUIREMENTS FOR problematicText:
-1. Must be 50-150 words verbatim from the contract
-2. Must NOT be truncated - copy complete sentences/paragraphs
-3. Must match the contract text EXACTLY character-for-character INCLUDING unusual spacing (like "D ecember" if that's how it appears)
-4. Do NOT normalize, reformat, or clean up the text - preserve it EXACTLY as shown above
-5. Include enough context so the quote is findable in the PDF
-6. Do NOT summarize or paraphrase - this breaks the highlighting system
+CRITICAL REQUIREMENTS:
+1. For each violation, provide "start" and "end" indices (0-based, exclusive end) pointing into the contract text above
+2. The "problematicText" field must be the exact substring: contract[start:end]
+3. If you cannot provide valid indices for an exact substring, do NOT return that violation
+4. Indices must be: start >= 0, end > start, end <= contract length
+5. The text between start and end must be 50-150 words and demonstrate the violation
 
 Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
 

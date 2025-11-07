@@ -140,6 +140,7 @@ export default function ContractReviewSimplified() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           text: contractText,
+          cachedText: contractText, // Send the exact text we're rendering
           fileName: file?.name || "contract.txt",
           useAI: true
         }),
@@ -164,15 +165,23 @@ export default function ContractReviewSimplified() {
       clearInterval(progressInterval);
       setAnalysisProgress(100);
       
-      // Filter to only show violations that can be highlighted in the PDF
+      // Filter to only show violations with valid indices
       const validViolations = (result.violations || []).filter((v: ViolationDetail) => {
         if (!v.problematicText || v.problematicText === 'MISSING_CLAUSE') {
           return true; // Keep missing clause violations
         }
-        if (!v.pageNumber) {
-          console.log(`❌ Excluding violation "${v.id}" - not found in PDF`);
+        
+        // Require valid start/end indices
+        if (typeof v.start !== 'number' || typeof v.end !== 'number') {
+          console.log(`❌ Excluding violation "${v.id}" - missing indices`);
           return false;
         }
+        
+        if (v.end <= v.start || v.start < 0 || v.end > contractText.length) {
+          console.log(`❌ Excluding violation "${v.id}" - invalid indices (${v.start}-${v.end})`);
+          return false;
+        }
+        
         return true;
       });
       

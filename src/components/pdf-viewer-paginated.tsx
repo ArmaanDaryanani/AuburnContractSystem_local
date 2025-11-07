@@ -125,31 +125,37 @@ export function PDFViewerPaginated({
       const t = normalizeText(v.problematicText || '');
       if (!t || t === 'MISSING_CLAUSE') return;
 
-      const pageIdx = pageBuffers.findIndex(pg => 
+      // Try exact match first
+      let pageIdx = pageBuffers.findIndex(pg => 
         pg.toLowerCase().includes(t.toLowerCase())
       );
       
       if (pageIdx !== -1) {
         v.pageNumber = pageIdx + 1;
         console.log(`✅ Found violation "${v.id}" on page ${pageIdx + 1}:`, t.substring(0, 50));
-      } else {
-        console.log(`⚠️ Violation "${v.id}" not found in PDF text:`, t.substring(0, 50));
-        
-        const words = t.split(/\s+/).filter(w => w.length > 3);
-        if (words.length >= 5) {
-          const firstFiveWords = words.slice(0, 5).join(' ').toLowerCase();
-          const fuzzyIdx = pageBuffers.findIndex(pg => 
-            pg.toLowerCase().includes(firstFiveWords)
+        return;
+      }
+
+      // Fuzzy match: extract significant words and try matching
+      const words = t.split(/\s+/).filter(w => w.length > 3);
+      if (words.length >= 3) {
+        // Try first 10 words, then 7, then 5, then 3
+        for (const wordCount of [10, 7, 5, 3]) {
+          if (words.length < wordCount) continue;
+          
+          const searchPhrase = words.slice(0, wordCount).join(' ').toLowerCase();
+          pageIdx = pageBuffers.findIndex(pg => 
+            pg.toLowerCase().includes(searchPhrase)
           );
           
-          if (fuzzyIdx !== -1) {
-            v.pageNumber = fuzzyIdx + 1;
-            console.log(`🔍 Fuzzy match found for "${v.id}" on page ${fuzzyIdx + 1} using first 5 words`);
-          } else {
-            console.log(`❌ Even fuzzy match failed. First 5 words: "${firstFiveWords}"`);
-            console.log(`📄 PDF page 1 sample:`, pageBuffers[0]?.substring(0, 200));
+          if (pageIdx !== -1) {
+            v.pageNumber = pageIdx + 1;
+            console.log(`🔍 Fuzzy match (${wordCount} words) for "${v.id}" on page ${pageIdx + 1}`);
+            return;
           }
         }
+        
+        console.log(`❌ No match found for "${v.id}". Tried words:`, words.slice(0, 10).join(' '));
       }
     });
   }, [violations]);
