@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     let enhancedPrompt;
     try {
       // Get RAG-enhanced prompt with real Auburn policies and FAR regulations
-      enhancedPrompt = await buildEnhancedPrompt(text.substring(0, 8000), true);
+      enhancedPrompt = await buildEnhancedPrompt(text.substring(0, 50000), true);
       console.log('✅ [/api/contract/analyze] RAG enhancement successful');
     } catch (ragError) {
       console.warn('⚠️ [/api/contract/analyze] RAG enhancement failed, using fallback:', ragError);
@@ -93,14 +93,14 @@ KEY AUBURN POLICIES:
 7. Termination for convenience clause required
 
 CONTRACT TO ANALYZE:
-${text.substring(0, 8000)}
+${text.substring(0, 50000)}
 
 Analyze the contract and identify all compliance issues.`;
     }
 
     // Search for specific FAR violations
     console.log('📋 [/api/contract/analyze] Searching for FAR violations');
-    const farViolations = await searchFARViolations(text.substring(0, 2000), 5);
+    const farViolations = await searchFARViolations(text.substring(0, 10000), 5);
     
     // Get Auburn policy context for key clauses
     console.log('🏫 [/api/contract/analyze] Getting Auburn policy context');
