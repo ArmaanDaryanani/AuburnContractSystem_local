@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { Loader2 } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -36,9 +36,6 @@ export function PDFViewerPaginated({
   const [numPages, setNumPages] = useState<number>(0);
   const [isExtracting, setIsExtracting] = useState(false);
   const [containerWidth, setContainerWidth] = useState<number>(0);
-  const [containerHeight, setContainerHeight] = useState<number>(0);
-  const [pageWidth, setPageWidth] = useState<number>(0);
-  const [pageHeight, setPageHeight] = useState<number>(0);
   const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -50,35 +47,21 @@ export function PDFViewerPaginated({
   }, [file]);
 
   useEffect(() => {
-    const updateDimensions = () => {
+    const updateWidth = () => {
       if (containerRef.current) {
-        setContainerWidth(containerRef.current.offsetWidth);
-        setContainerHeight(containerRef.current.offsetHeight);
+        setContainerWidth(containerRef.current.offsetWidth - 32); // subtract padding
       }
     };
 
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
   }, []);
 
-  const onDocumentLoadSuccess = useCallback(async ({ numPages }: { numPages: number }) => {
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     onTotalPagesChange(numPages);
-    
-    try {
-      const pdfjsLib = await import('pdfjs-dist');
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-      const page = await pdf.getPage(1);
-      const viewport = page.getViewport({ scale: 1 });
-      
-      setPageWidth(viewport.width);
-      setPageHeight(viewport.height);
-    } catch (err) {
-      console.error('Error getting page dimensions:', err);
-    }
-  }, [file, onTotalPagesChange]);
+  };
 
   useEffect(() => {
     if (!file || isExtracting) return;
@@ -141,7 +124,7 @@ export function PDFViewerPaginated({
         </div>
       )}
 
-      <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-hidden bg-gray-50">
+      <div ref={containerRef} className="flex-1 flex items-center justify-center overflow-auto bg-gray-50 p-4">
         <Document
           file={pdfUrl}
           onLoadSuccess={onDocumentLoadSuccess}
@@ -153,7 +136,7 @@ export function PDFViewerPaginated({
         >
           <Page
             pageNumber={currentPage}
-            width={containerHeight && pageHeight ? (containerHeight / pageHeight) * pageWidth * (zoom / 100) : undefined}
+            width={containerWidth ? containerWidth * (zoom / 100) : undefined}
             renderTextLayer={true}
             renderAnnotationLayer={true}
           />
