@@ -59,7 +59,7 @@ export function PDFViewerPaginated({
     onTotalPagesChange(numPages);
   };
 
-  const onPageRenderSuccess = useCallback(() => {
+  const onRenderSuccess = useCallback(() => {
     setRenderTick(t => t + 1);
   }, []);
 
@@ -232,7 +232,7 @@ export function PDFViewerPaginated({
               scale={zoom / 100}
               renderTextLayer={true}
               renderAnnotationLayer={true}
-              onRenderSuccess={onPageRenderSuccess}
+              onRenderSuccess={onRenderSuccess}
             />
           </Document>
         </div>
