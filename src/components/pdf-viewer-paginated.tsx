@@ -36,48 +36,29 @@ export function PDFViewerPaginated({
   const [numPages, setNumPages] = useState<number>(0);
   const [isExtracting, setIsExtracting] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pageWH, setPageWH] = useState<{ w: number; h: number } | null>(null);
-  const [fitWidth, setFitWidth] = useState<number>(0);
+  const [fitHeight, setFitHeight] = useState<number>(0);
 
   useEffect(() => {
-    if (file) {
-      const url = URL.createObjectURL(file);
-      setPdfUrl(url);
-      return () => URL.revokeObjectURL(url);
-    }
-  }, [file]);
-
-  useEffect(() => {
-    let cancelled = false;
+    let url = "";
     (async () => {
-      try {
-        const pdfjsLib = await import('pdfjs-dist');
-        const data = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data }).promise;
-        const page = await pdf.getPage(1);
-        const vp = page.getViewport({ scale: 1 });
-        if (!cancelled) setPageWH({ w: vp.width, h: vp.height });
-      } catch (err) {
-        console.error('Error getting page dimensions:', err);
-      }
+      url = URL.createObjectURL(file);
+      setPdfUrl(url);
     })();
-    return () => { cancelled = true; };
+    return () => { if (url) URL.revokeObjectURL(url); };
   }, [file]);
 
   useEffect(() => {
-    const update = () => {
-      if (!containerRef.current || !pageWH) return;
-      const containerH = containerRef.current.offsetHeight;
-      const scaleToFit = (containerH * 0.9) / pageWH.h;
-      const widthAtFit = pageWH.w * scaleToFit;
-      setFitWidth(widthAtFit);
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [pageWH]);
+    if (!containerRef.current) return;
+    const el = containerRef.current;
 
-  const displayWidth = fitWidth ? (fitWidth * (zoom / 100)) : undefined;
+    const ro = new ResizeObserver(() => {
+      setFitHeight(el.clientHeight);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const displayHeight = fitHeight ? Math.floor(fitHeight * (zoom / 100)) : undefined;
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -157,7 +138,7 @@ export function PDFViewerPaginated({
         >
           <Page
             pageNumber={currentPage}
-            width={displayWidth}
+            height={displayHeight}
             renderTextLayer={true}
             renderAnnotationLayer={true}
           />
