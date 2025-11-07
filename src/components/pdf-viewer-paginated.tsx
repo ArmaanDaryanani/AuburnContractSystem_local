@@ -163,35 +163,22 @@ export function PDFViewerPaginated({
     
     if (pageViolations.length === 0) return;
     
-    // Fix #3 Option A: Build offsets from the AUTHORITATIVE pageText string
+    // Simple approach: assume DOM spans are sequential in the pageText
     const pageText = pageTextsRef.current[pageIdx] || '';
-    const pageItems = pageItemStringsRef.current[pageIdx] || [];
     
-    // Build authoritative offsets from pageItems (same source as pageText)
+    console.log(`📊 Page ${pageIdx + 1}: pageText length = ${pageText.length}`);
+    
+    // Build span offsets by accumulating actual DOM span text
     let acc = 0;
-    const itemOffsets = pageItems.map(item => {
+    const spanOffsets = spans.map(span => {
+      const text = span.textContent || '';
       const start = acc;
-      const end = acc + item.length;
-      acc = end + 1; // +1 for the space joiner we used in items.join(" ")
-      return { start, end, text: item };
+      const end = acc + text.length;
+      acc = end; // No +1, exact concatenation
+      return { start, end };
     });
     
-    // Map DOM spans to itemOffsets by matching text content
-    const spanOffsets = spans.map(span => {
-      const spanText = (span.textContent || '').trim();
-      
-      // Find matching item offset
-      for (let i = 0; i < itemOffsets.length; i++) {
-        const item = itemOffsets[i];
-        if (item.text.includes(spanText) || spanText.includes(item.text)) {
-          return { start: item.start, end: item.end };
-        }
-      }
-      
-      // Fallback: assume sequential mapping
-      const idx = spans.indexOf(span);
-      return itemOffsets[Math.min(idx, itemOffsets.length - 1)] || { start: 0, end: 0 };
-    });
+    console.log(`📊 Page ${pageIdx + 1}: Built ${spanOffsets.length} span offsets, total accumulated = ${acc}`);
     
     let firstHighlightedSpan: HTMLSpanElement | undefined = undefined;
     
@@ -200,7 +187,12 @@ export function PDFViewerPaginated({
       const localStart = Math.max(0, v.start! - gStart);
       const localEnd = Math.min(pageText.length, v.end! - gStart);
       
-      if (localEnd <= localStart) return;
+      console.log(`🔍 Violation "${v.id}": global=${v.start}-${v.end}, local=${localStart}-${localEnd}, gStart=${gStart}, gEnd=${gEnd}`);
+      
+      if (localEnd <= localStart) {
+        console.log(`❌ Skipping "${v.id}" - localEnd <= localStart`);
+        return;
+      }
       
       // Fix #5: Explicit and clearer span selection
       let startSpan = -1, endSpan = -1;
@@ -210,7 +202,12 @@ export function PDFViewerPaginated({
         if (start < localEnd) endSpan = i;                          // extend while overlapping
       }
       
-      if (startSpan === -1 || endSpan === -1) return;
+      console.log(`🎯 Violation "${v.id}": startSpan=${startSpan}, endSpan=${endSpan}`);
+      
+      if (startSpan === -1 || endSpan === -1) {
+        console.log(`❌ Skipping "${v.id}" - no matching spans found`);
+        return;
+      }
       
       // Highlight the spans
       for (let i = startSpan; i <= endSpan; i++) {
