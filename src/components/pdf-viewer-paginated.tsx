@@ -114,8 +114,6 @@ export function PDFViewerPaginated({
         rangesRef.current = ranges;
         
         const allText = pageTexts.join(PAGE_JOINER);
-        console.log(`📚 Cached ${pageTexts.length} pages of text (total: ${allText.length} chars)`);
-
         if (onTextExtracted) {
           onTextExtracted(allText);
         }
@@ -149,13 +147,10 @@ export function PDFViewerPaginated({
         if (v.start < start) hi = mid - 1;
         else if (v.start >= end) lo = mid + 1;
         else {
-          v.pageNumber = mid + 1; // Convert to 1-based
-          console.log(`✅ Mapped violation "${v.id}" to page ${mid + 1} using index ${v.start}-${v.end}`);
+          v.pageNumber = mid + 1;
           return;
         }
       }
-      // Fix #8: Better logging with max range
-      console.warn(`⚠️ Index ${v.start}..${v.end} out of range for "${v.id}" (0..${ranges[ranges.length-1]?.end})`);
     });
   }, [violations]);
 
@@ -182,13 +177,7 @@ export function PDFViewerPaginated({
     const itemOffsets = pageItemOffsetsRef.current[pageIdx] || [];
     const pageText = pageTextsRef.current[pageIdx] || '';
     
-    console.log(`📊 Page ${pageIdx + 1}: items=${items.length}, spans=${spans.length}, pageText=${pageText.length} chars`);
-    
-    // Guard: span count should match item count (pdf.js preserves order)
-    if (spans.length !== items.length) {
-      console.warn(`⚠️ Span/item count mismatch on page ${pageIdx + 1}: ${spans.length} spans vs ${items.length} items`);
-      // Proceed anyway - partial highlighting is better than none
-    }
+    console.log(`📊 Page ${pageIdx + 1}: items=${items.length}, spans=${spans.length}`);
     
     let firstHighlightedSpan: HTMLSpanElement | undefined = undefined;
     
@@ -260,31 +249,40 @@ export function PDFViewerPaginated({
       return;
     }
     
-    // Small delay to let react-pdf render the page
-    const timeout = setTimeout(() => {
+    // Retry multiple times with increasing delays to catch async text layer rendering
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    const tryHighlight = () => {
+      attempts++;
+      
       const pageEl = document.querySelector(
         `.react-pdf__Page[data-page-number="${currentPage}"]`
       ) as HTMLElement | null;
       const textLayer = pageEl?.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
       
       if (!textLayer) {
-        console.log(`⚠️ No text layer on page ${currentPage}`);
+        if (attempts < maxAttempts) {
+          setTimeout(tryHighlight, 50 * attempts);
+        }
         return;
       }
       
       const pageIdx = currentPage - 1;
       const spans = Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
       
-      if (spans.length === 0) {
-        console.log(`⏳ Page ${currentPage}: Text layer not ready yet, waiting...`);
+      if (spans.length === 0 && attempts < maxAttempts) {
+        setTimeout(tryHighlight, 50 * attempts);
         return;
       }
       
-      console.log(`✅ Page ${currentPage}: Found ${spans.length} spans, highlighting...`);
-      runHighlight(spans, pageIdx);
-    }, 150);
+      if (spans.length > 0) {
+        console.log(`✅ Page ${currentPage}: Found ${spans.length} spans, highlighting...`);
+        runHighlight(spans, pageIdx);
+      }
+    };
     
-    return () => clearTimeout(timeout);
+    tryHighlight();
   }, [pdfUrl, currentPage, violationCount, zoom, runHighlight, violations]);
 
   if (!pdfUrl) {
