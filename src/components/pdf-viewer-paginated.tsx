@@ -32,6 +32,7 @@ export function PDFViewerPaginated({
   const [numPages, setNumPages] = useState<number>(0);
   const extractedOnceRef = useRef<string | null>(null);
   const [renderTick, setRenderTick] = useState(0);
+  const pageTextsRef = useRef<string[]>([]);
 
   useEffect(() => {
     let url = "";
@@ -61,8 +62,6 @@ export function PDFViewerPaginated({
     .filter(t => t !== 'MISSING_CLAUSE')
     .slice(0, 20) as string[];
 
-  console.log('🎯 Tokens to highlight:', tokens);
-
   useEffect(() => {
     if (!file) return;
     if (extractedOnceRef.current === file.name) return;
@@ -79,14 +78,40 @@ export function PDFViewerPaginated({
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
+        const pageTexts: string[] = [];
         let allText = "";
         const num = pdf.numPages;
+        
         for (let p = 1; p <= num; p++) {
           if (cancelled) return;
           const page = await pdf.getPage(p);
           const content = await page.getTextContent();
-          allText += content.items.map((i: any) => i.str).join(" ") + "\n";
+          const pageText = content.items.map((i: any) => i.str).join(" ");
+          pageTexts.push(pageText);
+          allText += pageText + "\n";
         }
+
+        pageTextsRef.current = pageTexts;
+
+        const pageTextNorm = (txt: string) => txt.replace(/\s+/g, ' ').trim();
+        const pageBuffers = pageTexts.map(pageTextNorm);
+
+        violations.forEach(v => {
+          const t = (v.problematicText || '').replace(/\s+/g, ' ').trim();
+          if (!t || t === 'MISSING_CLAUSE') return;
+
+          for (let i = 0; i < pageBuffers.length; i++) {
+            if (pageBuffers[i].toLowerCase().includes(t.toLowerCase())) {
+              v.pageNumber = i + 1;
+              console.log(`✅ Found violation on page ${i + 1}:`, t.substring(0, 50));
+              break;
+            }
+          }
+          
+          if (!v.pageNumber) {
+            console.log('❌ Violation text not found in any page:', t.substring(0, 50));
+          }
+        });
 
         if (onTextExtracted) {
           onTextExtracted(allText);
@@ -97,7 +122,7 @@ export function PDFViewerPaginated({
     })();
 
     return () => { cancelled = true; };
-  }, [file, onTextExtracted]);
+  }, [file, onTextExtracted, violations]);
 
   useEffect(() => {
     if (!pdfUrl || violationCount === 0 || tokens.length === 0) return;
@@ -108,60 +133,53 @@ export function PDFViewerPaginated({
       ) as HTMLElement | null;
       const textLayer = pageEl?.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
       
-      if (!textLayer) {
-        console.log('❌ No text layer found for page', currentPage);
-        return;
-      }
+      if (!textLayer) return;
       
-      const textSpans = Array.from(textLayer.querySelectorAll('span'));
-      const fullText = textSpans.map(s => s.textContent || '').join(' ');
+      const spans = Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
       
-      console.log(`📄 Page ${currentPage} text length:`, fullText.length);
+      spans.forEach(s => {
+        s.style.backgroundColor = '';
+        s.style.borderRadius = '';
+        s.style.padding = '';
+      });
+      
+      const spanNorms = spans.map(s => (s.textContent || '').replace(/\s+/g, ' '));
+      const pageNorm = spanNorms.join(' ');
       
       tokens.forEach(token => {
         if (!token || token.length < 10) return;
         
-        console.log('🔍 Searching for:', token.substring(0, 50) + '...');
+        const tokenNorm = token.replace(/\s+/g, ' ').trim();
+        const pageLower = pageNorm.toLowerCase();
+        const tokenLower = tokenNorm.toLowerCase();
         
-        const normalizedToken = token.trim().replace(/\s+/g, ' ');
-        const normalizedFullText = fullText.replace(/\s+/g, ' ');
+        const idx = pageLower.indexOf(tokenLower);
+        if (idx === -1) return;
         
-        const index = normalizedFullText.toLowerCase().indexOf(normalizedToken.toLowerCase());
+        let acc = 0;
+        let startSpan = -1;
+        let endSpan = -1;
         
-        if (index !== -1) {
-          console.log('✅ Found match at index:', index);
+        for (let i = 0; i < spanNorms.length; i++) {
+          const seg = spanNorms[i];
+          const segStart = acc;
+          const segEnd = acc + seg.length;
           
-          let charCount = 0;
-          let startSpan = -1;
-          let endSpan = -1;
-          
-          for (let i = 0; i < textSpans.length; i++) {
-            const spanText = textSpans[i].textContent || '';
-            const spanStart = charCount;
-            const spanEnd = charCount + spanText.length;
-            
-            if (startSpan === -1 && spanEnd > index) {
-              startSpan = i;
-            }
-            
-            if (startSpan !== -1 && spanEnd >= index + normalizedToken.length) {
-              endSpan = i;
-              break;
-            }
-            
-            charCount += spanText.length + 1;
+          if (startSpan === -1 && segEnd > idx) startSpan = i;
+          if (startSpan !== -1 && segEnd >= idx + tokenNorm.length) {
+            endSpan = i;
+            break;
           }
-          
-          if (startSpan !== -1 && endSpan !== -1) {
-            for (let i = startSpan; i <= endSpan; i++) {
-              (textSpans[i] as HTMLSpanElement).style.backgroundColor = 'rgba(254, 240, 138, 0.8)';
-              (textSpans[i] as HTMLSpanElement).style.borderRadius = '2px';
-              (textSpans[i] as HTMLSpanElement).style.padding = '2px 1px';
-            }
-            console.log(`✨ Highlighted spans ${startSpan} to ${endSpan} on page ${currentPage}`);
+          acc = segEnd + 1;
+        }
+        
+        if (startSpan !== -1 && endSpan !== -1) {
+          for (let i = startSpan; i <= endSpan; i++) {
+            spans[i].style.backgroundColor = 'rgba(254, 240, 138, 0.8)';
+            spans[i].style.borderRadius = '2px';
+            spans[i].style.padding = '1px 0';
           }
-        } else {
-          console.log(`❌ No match found on page ${currentPage}`);
+          console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${currentPage}`);
         }
       });
     }, 500);
