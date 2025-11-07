@@ -216,26 +216,32 @@ export function PDFViewerPaginated({
         return;
       }
       
-      // Highlight corresponding spans by index
-      let highlighted = 0;
+      // Build expected text from items to match against spans
+      const expectedTexts = new Set<string>();
       for (const i of itemIndices) {
-        const el = spans[i];
-        if (!el) {
-          console.warn(`⚠️ Span ${i} not found for item`);
-          continue;
+        const itemText = items[i];
+        if (itemText && itemText.trim().length > 0) {
+          expectedTexts.add(itemText.trim());
         }
-        
-        el.classList.add('pdf-highlight');
-        el.style.backgroundColor = 'rgba(250, 204, 21, 0.9)';
-        el.style.boxShadow = '0 0 0 1px rgba(234, 179, 8, 0.4)';
-        el.style.borderRadius = '2px';
-        el.setAttribute('data-violation-id', v.id);
-        
-        if (!firstHighlightedSpan) firstHighlightedSpan = el;
-        highlighted++;
       }
       
-      console.log(`✨ Highlighted ${highlighted} spans on page ${pageIdx + 1} for violation "${v.id}"`);
+      // Highlight spans whose text matches our expected items
+      let highlighted = 0;
+      for (const span of spans) {
+        const spanText = span.textContent?.trim() || '';
+        if (spanText.length > 0 && expectedTexts.has(spanText)) {
+          span.classList.add('pdf-highlight');
+          span.style.backgroundColor = 'rgba(250, 204, 21, 0.9)';
+          span.style.boxShadow = '0 0 0 1px rgba(234, 179, 8, 0.4)';
+          span.style.borderRadius = '2px';
+          span.setAttribute('data-violation-id', v.id);
+          
+          if (!firstHighlightedSpan) firstHighlightedSpan = span;
+          highlighted++;
+        }
+      }
+      
+      console.log(`✨ Highlighted ${highlighted}/${expectedTexts.size} spans on page ${pageIdx + 1} for violation "${v.id}"`);
     });
     
     // Fix #6: Gentle auto-scroll to first highlighted span
