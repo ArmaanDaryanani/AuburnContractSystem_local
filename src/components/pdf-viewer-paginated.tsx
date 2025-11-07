@@ -231,9 +231,10 @@ export function PDFViewerPaginated({
         const spanText = span.textContent?.trim() || '';
         if (spanText.length > 0 && expectedTexts.has(spanText)) {
           span.classList.add('pdf-highlight');
-          span.style.backgroundColor = 'rgba(250, 204, 21, 0.9)';
-          span.style.boxShadow = '0 0 0 1px rgba(234, 179, 8, 0.4)';
-          span.style.borderRadius = '2px';
+          span.style.backgroundColor = 'rgba(255, 200, 200, 0.3)';
+          span.style.boxShadow = 'none';
+          span.style.borderRadius = '0';
+          span.style.mixBlendMode = 'multiply';
           span.setAttribute('data-violation-id', v.id);
           
           if (!firstHighlightedSpan) firstHighlightedSpan = span;

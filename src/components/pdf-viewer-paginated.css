@@ -1,6 +1,7 @@
 .pdf-highlight {
-  background-color: rgba(254, 240, 138, 0.95) !important;
-  border-radius: 2px;
-  padding: 2px 1px !important;
-  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.4) !important;
+  background-color: rgba(255, 200, 200, 0.3) !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+  mix-blend-mode: multiply !important;
 }
