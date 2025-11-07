@@ -277,17 +277,41 @@ export function PDFViewerPaginated({
     console.log(`📄 Page ${currentPage}: Found ${spans.length} spans`);
     
     if (spans.length === 0) {
-      console.log('⏳ Waiting for spans to populate via MutationObserver');
+      console.log('⏳ Waiting for spans to populate via MutationObserver + polling');
+      let attempts = 0;
+      const maxAttempts = 50;
+      
       const mo = new MutationObserver(() => {
-        spans = ensureSpans();
-        if (spans.length > 0) {
-          console.log(`✅ Spans populated: ${spans.length} spans`);
+        const newSpans = ensureSpans();
+        console.log(`🔄 MutationObserver fired: ${newSpans.length} spans (attempt ${attempts + 1})`);
+        if (newSpans.length > 0) {
+          console.log(`✅ Spans populated: ${newSpans.length} spans`);
           mo.disconnect();
-          runHighlight(spans, pageIdx);
+          runHighlight(newSpans, pageIdx);
         }
       });
       mo.observe(textLayer, { childList: true, subtree: true });
-      return () => mo.disconnect();
+      
+      const pollInterval = setInterval(() => {
+        attempts++;
+        const newSpans = ensureSpans();
+        console.log(`🔍 Polling attempt ${attempts}: ${newSpans.length} spans`);
+        if (newSpans.length > 0) {
+          console.log(`✅ Spans found via polling: ${newSpans.length} spans`);
+          clearInterval(pollInterval);
+          mo.disconnect();
+          runHighlight(newSpans, pageIdx);
+        } else if (attempts >= maxAttempts) {
+          console.warn(`⚠️ Gave up waiting for spans after ${maxAttempts} attempts`);
+          clearInterval(pollInterval);
+          mo.disconnect();
+        }
+      }, 100);
+      
+      return () => {
+        mo.disconnect();
+        clearInterval(pollInterval);
+      };
     }
     
     console.log(`▶️ Calling runHighlight for page ${currentPage} with ${spans.length} spans`);
