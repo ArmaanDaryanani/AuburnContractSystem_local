@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { Loader2 } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -25,7 +25,7 @@ interface PDFViewerPaginatedProps {
 export function PDFViewerPaginated({
   file,
   violations,
-  zoom = 100,
+  zoom = 85,
   currentPage,
   showSinglePage,
   onPageChange,
@@ -35,8 +35,6 @@ export function PDFViewerPaginated({
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [numPages, setNumPages] = useState<number>(0);
   const [isExtracting, setIsExtracting] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [fitHeight, setFitHeight] = useState<number>(0);
 
   useEffect(() => {
     let url = "";
@@ -46,19 +44,6 @@ export function PDFViewerPaginated({
     })();
     return () => { if (url) URL.revokeObjectURL(url); };
   }, [file]);
-
-  useEffect(() => {
-    if (!containerRef.current) return;
-    const el = containerRef.current;
-
-    const ro = new ResizeObserver(() => {
-      setFitHeight(el.clientHeight);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  const displayHeight = fitHeight ? Math.floor((fitHeight - 20) * (zoom / 100)) : undefined;
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -114,7 +99,7 @@ export function PDFViewerPaginated({
   ).length;
 
   return (
-    <div className="bg-white h-full flex flex-col">
+    <div className="bg-white h-full flex flex-col overflow-hidden">
       {violationCount > 0 && (
         <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 flex-shrink-0">
           <p className="text-sm text-yellow-800 font-medium">
@@ -126,23 +111,25 @@ export function PDFViewerPaginated({
         </div>
       )}
 
-      <div ref={containerRef} className="flex-1 min-h-0 flex items-center justify-center overflow-hidden bg-gray-50">
-        <Document
-          file={pdfUrl}
-          onLoadSuccess={onDocumentLoadSuccess}
-          loading={
-            <div className="flex items-center justify-center h-full">
-              <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
-            </div>
-          }
-        >
-          <Page
-            pageNumber={currentPage}
-            height={displayHeight}
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
-          />
-        </Document>
+      <div className="flex-1 overflow-auto bg-gray-50 p-4">
+        <div className="flex items-start justify-center">
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={onDocumentLoadSuccess}
+            loading={
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
+              </div>
+            }
+          >
+            <Page
+              pageNumber={currentPage}
+              scale={zoom / 100}
+              renderTextLayer={true}
+              renderAnnotationLayer={true}
+            />
+          </Document>
+        </div>
       </div>
     </div>
   );

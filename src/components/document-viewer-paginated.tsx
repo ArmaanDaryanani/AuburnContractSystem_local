@@ -290,7 +290,8 @@ export function DocumentViewerPaginated({
 
   return (
     <>
-      <Card className="border-gray-200 shadow-sm h-full flex flex-col overflow-hidden">
+      <div className="h-full flex flex-col relative">
+      <Card className="border-gray-200 shadow-sm flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="border-b border-gray-200 p-4 flex-shrink-0">
         <div className="flex items-center justify-between mb-2">
@@ -434,52 +435,53 @@ export function DocumentViewerPaginated({
           </div>
         </div>
 
-        {/* Page Navigation Footer */}
-        {totalPages > 0 && (
-          <div className="h-14 flex-shrink-0 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200 px-4">
-            <div className="h-full flex items-center justify-center gap-4">
-              <Button
-                onClick={handlePreviousPage}
-                disabled={currentPage === 1}
-                variant="ghost"
-                size="sm"
-                className="h-9 w-9 p-0 disabled:opacity-30 hover:bg-gray-100"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
-
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1"
-                  max={totalPages}
-                  value={currentPage}
-                  onChange={(e) => {
-                    const page = parseInt(e.target.value) || 1;
-                    setCurrentPage(Math.min(Math.max(1, page), totalPages));
-                  }}
-                  className="w-14 px-2 py-1.5 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                />
-                <span className="text-sm text-gray-400">/</span>
-                <span className="text-sm font-medium text-gray-700 min-w-[2rem]">
-                  {totalPages}
-                </span>
-              </div>
-
-              <Button
-                onClick={handleNextPage}
-                disabled={currentPage >= totalPages}
-                variant="ghost"
-                size="sm"
-                className="h-9 w-9 p-0 disabled:opacity-30 hover:bg-gray-100"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
+    
+    {/* Page Navigation Footer - Fixed at bottom of viewport */}
+    {totalPages > 0 && (
+      <div className="fixed bottom-0 left-0 right-0 h-14 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200 px-4 z-50">
+        <div className="h-full flex items-center justify-center gap-4">
+          <Button
+            onClick={handlePreviousPage}
+            disabled={currentPage === 1}
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0 disabled:opacity-30 hover:bg-gray-100"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Button>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="number"
+              min="1"
+              max={totalPages}
+              value={currentPage}
+              onChange={(e) => {
+                const page = parseInt(e.target.value) || 1;
+                setCurrentPage(Math.min(Math.max(1, page), totalPages));
+              }}
+              className="w-14 px-2 py-1.5 text-sm text-center border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+            />
+            <span className="text-sm text-gray-400">/</span>
+            <span className="text-sm font-medium text-gray-700 min-w-[2rem]">
+              {totalPages}
+            </span>
+          </div>
+
+          <Button
+            onClick={handleNextPage}
+            disabled={currentPage >= totalPages}
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0 disabled:opacity-30 hover:bg-gray-100"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Button>
+        </div>
+      </div>
+    )}
     
     {/* Violation Popup */}
     {selectedViolation && (
@@ -488,6 +490,7 @@ export function DocumentViewerPaginated({
         onClose={() => setSelectedViolation(null)}
       />
     )}
+    </div>
     </>
   );
 }
