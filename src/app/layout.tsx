@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { ContractReviewProvider } from "@/contexts/ContractReviewContext";
 import { Analytics } from "@vercel/analytics/next";
+import Providers from "./providers";
 
 const bitter = Bitter({ 
   subsets: ["latin"],
@@ -23,11 +24,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className={`${bitter.className} h-full antialiased`}>
-        <ContractReviewProvider>
-          {children}
-        </ContractReviewProvider>
-        <Toaster />
-        <Analytics />
+        <Providers>
+          <ContractReviewProvider>
+            {children}
+          </ContractReviewProvider>
+          <Toaster />
+          <Analytics />
+        </Providers>
       </body>
     </html>
   );

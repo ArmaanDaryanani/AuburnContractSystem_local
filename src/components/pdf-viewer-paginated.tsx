@@ -1,15 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { Loader2 } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
-
-if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
-}
 
 interface PDFViewerPaginatedProps {
   file: File;
@@ -20,6 +16,23 @@ interface PDFViewerPaginatedProps {
   onPageChange: (page: number) => void;
   onTotalPagesChange: (total: number) => void;
   onTextExtracted?: (text: string) => void;
+}
+
+function escapeRegExp(s: string) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function makeHighlighter(tokens: string[]) {
+  const rx = tokens.length
+    ? new RegExp(`(${tokens.map(t => escapeRegExp(t)).join("|")})`, "gi")
+    : null;
+
+  return ({ str }: { str: string }) => {
+    if (!rx) return str;
+    return str.split(rx).map((chunk, i) =>
+      rx.test(chunk) ? `<mark class="bg-yellow-200 rounded px-0.5">${chunk}</mark>` : chunk
+    ).join("");
+  };
 }
 
 export function PDFViewerPaginated({
@@ -34,7 +47,7 @@ export function PDFViewerPaginated({
 }: PDFViewerPaginatedProps) {
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [numPages, setNumPages] = useState<number>(0);
-  const [isExtracting, setIsExtracting] = useState(false);
+  const extractedOnceRef = useRef<string | null>(null);
 
   useEffect(() => {
     let url = "";
@@ -51,40 +64,40 @@ export function PDFViewerPaginated({
   };
 
   useEffect(() => {
-    if (!file || isExtracting) return;
+    if (!file) return;
+    if (extractedOnceRef.current === file.name) return;
+    extractedOnceRef.current = file.name;
 
-    const extractText = async () => {
-      setIsExtracting(true);
+    let cancelled = false;
+
+    (async () => {
       try {
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-        
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        
-        onTotalPagesChange(pdf.numPages);
 
-        let fullText = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const textContent = await page.getTextContent();
-          const pageText = textContent.items.map((item: any) => item.str).join(' ');
-          fullText += pageText + '\n\n';
+        let allText = "";
+        const num = pdf.numPages;
+        for (let p = 1; p <= num; p++) {
+          if (cancelled) return;
+          const page = await pdf.getPage(p);
+          const content = await page.getTextContent();
+          allText += content.items.map((i: any) => i.str).join(" ") + "\n";
         }
 
         if (onTextExtracted) {
-          onTextExtracted(fullText);
+          onTextExtracted(allText);
         }
       } catch (err) {
-        console.error('Error extracting PDF text:', err);
-      } finally {
-        setIsExtracting(false);
+        console.error("Error extracting PDF text:", err);
       }
-    };
+    })();
 
-    extractText();
-  }, [file, onTotalPagesChange, onTextExtracted, isExtracting]);
-
+    return () => { cancelled = true; };
+  }, [file, onTextExtracted]);
 
   if (!pdfUrl) {
     return (
@@ -98,6 +111,12 @@ export function PDFViewerPaginated({
     v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
   ).length;
 
+  const tokens = violations
+    ?.map(v => v.problematicText || v.clause)
+    .filter(Boolean)
+    .filter(t => t !== 'MISSING_CLAUSE')
+    .slice(0, 20) as string[];
+
   return (
     <div className="bg-white h-full flex flex-col overflow-hidden">
       {violationCount > 0 && (
@@ -106,7 +125,7 @@ export function PDFViewerPaginated({
             {violationCount} issue{violationCount !== 1 ? 's' : ''} detected
           </p>
           <p className="text-xs text-yellow-700 mt-1">
-            PDF text highlighting available - violations will be highlighted in yellow
+            Violations highlighted in yellow
           </p>
         </div>
       )}
