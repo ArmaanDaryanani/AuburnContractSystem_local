@@ -134,6 +134,22 @@ export function PDFViewerPaginated({
         console.log(`✅ Found violation "${v.id}" on page ${pageIdx + 1}:`, t.substring(0, 50));
       } else {
         console.log(`⚠️ Violation "${v.id}" not found in PDF text:`, t.substring(0, 50));
+        
+        const words = t.split(/\s+/).filter(w => w.length > 3);
+        if (words.length >= 5) {
+          const firstFiveWords = words.slice(0, 5).join(' ').toLowerCase();
+          const fuzzyIdx = pageBuffers.findIndex(pg => 
+            pg.toLowerCase().includes(firstFiveWords)
+          );
+          
+          if (fuzzyIdx !== -1) {
+            v.pageNumber = fuzzyIdx + 1;
+            console.log(`🔍 Fuzzy match found for "${v.id}" on page ${fuzzyIdx + 1} using first 5 words`);
+          } else {
+            console.log(`❌ Even fuzzy match failed. First 5 words: "${firstFiveWords}"`);
+            console.log(`📄 PDF page 1 sample:`, pageBuffers[0]?.substring(0, 200));
+          }
+        }
       }
     });
   }, [violations]);
