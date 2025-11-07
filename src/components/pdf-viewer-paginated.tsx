@@ -68,7 +68,7 @@ export function PDFViewerPaginated({
     const update = () => {
       if (!containerRef.current || !pageWH) return;
       const containerH = containerRef.current.offsetHeight;
-      const scaleToFit = containerH / pageWH.h;
+      const scaleToFit = (containerH * 0.9) / pageWH.h;
       const widthAtFit = pageWH.w * scaleToFit;
       setFitWidth(widthAtFit);
     };
