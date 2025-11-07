@@ -14,16 +14,13 @@ export async function extractTextFromImage(
   onProgress?: (progress: number) => void
 ): Promise<OCRResult> {
   try {
-    const worker = await Tesseract.createWorker({
-      logger: (m) => {
+    const worker = await Tesseract.createWorker('eng', undefined, {
+      logger: (m: any) => {
         if (m.status === 'recognizing text' && onProgress) {
           onProgress(m.progress * 100);
         }
       },
     });
-
-    await worker.loadLanguage('eng');
-    await worker.initialize('eng');
 
     const { data } = await worker.recognize(imageData);
 
@@ -32,10 +29,10 @@ export async function extractTextFromImage(
     return {
       text: data.text,
       confidence: data.confidence,
-      words: data.words.map(w => ({
+      words: (data as any).words?.map((w: any) => ({
         text: w.text,
         bbox: w.bbox,
-      })),
+      })) || [],
     };
   } catch (error) {
     console.error('OCR error:', error);
@@ -74,7 +71,8 @@ export async function extractTextFromPDFPages(
       await page.render({
         canvasContext: context,
         viewport: viewport,
-      }).promise;
+        canvas: canvas,
+      } as any).promise;
 
       const imageData = canvas.toDataURL('image/png');
       const ocrResult = await extractTextFromImage(imageData);
