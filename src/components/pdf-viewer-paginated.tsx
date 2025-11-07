@@ -93,26 +93,43 @@ export function PDFViewerPaginated({
   }, [file, onTextExtracted]);
 
   useEffect(() => {
-    if (!pdfUrl || violationCount === 0) return;
+    if (!pdfUrl || violationCount === 0 || tokens.length === 0) return;
     
     const highlightTimeout = setTimeout(() => {
       const textLayer = document.querySelector('.react-pdf__Page__textContent');
       if (!textLayer) return;
       
       const textSpans = textLayer.querySelectorAll('span');
+      const allText = Array.from(textSpans).map(span => span.textContent || '').join(' ').toLowerCase();
       
       tokens.forEach(token => {
-        if (!token) return;
-        const searchTerms = token.toLowerCase().split(/\s+/).filter(t => t.length > 3);
+        if (!token || token.length < 10) return;
+        
+        const searchPhrase = token.toLowerCase().trim();
+        if (!allText.includes(searchPhrase)) return;
+        
+        let currentText = '';
+        const matchingSpans: HTMLSpanElement[] = [];
         
         textSpans.forEach(span => {
           const spanText = span.textContent?.toLowerCase() || '';
-          const hasMatch = searchTerms.some(term => spanText.includes(term));
+          currentText += spanText;
           
-          if (hasMatch) {
-            span.style.backgroundColor = '#fef08a';
-            span.style.borderRadius = '2px';
-            span.style.padding = '1px 2px';
+          if (searchPhrase.includes(spanText) && spanText.trim().length > 0) {
+            matchingSpans.push(span as HTMLSpanElement);
+            
+            if (currentText.includes(searchPhrase)) {
+              matchingSpans.forEach(s => {
+                s.style.backgroundColor = 'rgba(254, 240, 138, 0.6)';
+                s.style.borderRadius = '2px';
+                s.style.padding = '1px 0';
+              });
+              matchingSpans.length = 0;
+              currentText = '';
+            }
+          } else if (matchingSpans.length > 0) {
+            matchingSpans.length = 0;
+            currentText = spanText;
           }
         });
       });
