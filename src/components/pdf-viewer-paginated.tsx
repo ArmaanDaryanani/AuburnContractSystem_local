@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
-import { FileText, Loader2 } from "lucide-react";
-import * as pdfjsLib from 'pdfjs-dist';
+import { Loader2 } from "lucide-react";
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 interface PDFViewerPaginatedProps {
   file: File;
@@ -26,35 +30,37 @@ export function PDFViewerPaginated({
   onTotalPagesChange,
   onTextExtracted
 }: PDFViewerPaginatedProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [extractedText, setExtractedText] = useState<string>("");
+  const [pdfUrl, setPdfUrl] = useState<string>("");
+  const [numPages, setNumPages] = useState<number>(0);
+  const [isExtracting, setIsExtracting] = useState(false);
 
   useEffect(() => {
-    // Set worker path
-    if (typeof window !== 'undefined') {
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setPdfUrl(url);
+      return () => URL.revokeObjectURL(url);
     }
-  }, []);
+  }, [file]);
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    onTotalPagesChange(numPages);
+  };
 
   useEffect(() => {
-    if (!file) return;
+    if (!file || isExtracting) return;
 
-    const loadPDF = async () => {
+    const extractText = async () => {
+      setIsExtracting(true);
       try {
-        setIsLoading(true);
-        setError(null);
-
+        const pdfjsLib = await import('pdfjs-dist');
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        
         const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
-
-        setPdfDoc(pdf);
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
         onTotalPagesChange(pdf.numPages);
 
-        // Extract all text from PDF
         let fullText = '';
         for (let i = 1; i <= pdf.numPages; i++) {
           const page = await pdf.getPage(i);
@@ -63,105 +69,63 @@ export function PDFViewerPaginated({
           fullText += pageText + '\n\n';
         }
 
-        setExtractedText(fullText);
         if (onTextExtracted) {
           onTextExtracted(fullText);
         }
-
-        setIsLoading(false);
       } catch (err) {
-        console.error('Error loading PDF:', err);
-        setError('Failed to load PDF');
-        setIsLoading(false);
+        console.error('Error extracting PDF text:', err);
+      } finally {
+        setIsExtracting(false);
       }
     };
 
-    loadPDF();
-  }, [file, onTotalPagesChange, onTextExtracted]);
+    extractText();
+  }, [file, onTotalPagesChange, onTextExtracted, isExtracting]);
 
-  useEffect(() => {
-    if (!pdfDoc || !canvasRef.current) return;
 
-    const renderPage = async () => {
-      try {
-        const page = await pdfDoc.getPage(currentPage);
-        const viewport = page.getViewport({ scale: zoom / 100 });
-
-        const canvas = canvasRef.current!;
-        const context = canvas.getContext('2d')!;
-
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-
-        const renderContext = {
-          canvasContext: context,
-          viewport: viewport,
-        };
-
-        await page.render(renderContext).promise;
-      } catch (err) {
-        console.error('Error rendering page:', err);
-      }
-    };
-
-    renderPage();
-  }, [pdfDoc, currentPage, zoom]);
-
-  if (isLoading) {
+  if (!pdfUrl) {
     return (
       <div className="flex items-center justify-center h-[750px] bg-white rounded-lg">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 text-gray-400 mx-auto mb-3 animate-spin" />
-          <p className="text-sm font-medium text-gray-700 mb-1">Loading PDF...</p>
-          <p className="text-xs text-gray-500">Extracting text for analysis</p>
-        </div>
+        <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
       </div>
     );
   }
 
-  if (error) {
-    return (
-      <div className="flex items-center justify-center h-[750px] bg-white rounded-lg">
-        <div className="text-center">
-          <FileText className="h-12 w-12 text-red-400 mx-auto mb-3" />
-          <p className="text-sm font-medium text-red-700 mb-1">Error Loading PDF</p>
-          <p className="text-xs text-gray-500">{error}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const violationsOnPage = violations.filter(v => 
-    v.type === 'PROBLEMATIC_TEXT' && v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
-  );
+  const violationCount = violations.filter(v => 
+    v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
+  ).length;
 
   return (
-    <div className="bg-white rounded-lg p-4">
-      {violationsOnPage.length > 0 && (
-        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+    <div className="bg-white rounded-lg overflow-auto" style={{ height: '750px' }}>
+      {violationCount > 0 && (
+        <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400">
           <p className="text-sm text-yellow-800 font-medium">
-            {violationsOnPage.length} issue{violationsOnPage.length !== 1 ? 's' : ''} detected in this document
+            {violationCount} issue{violationCount !== 1 ? 's' : ''} detected
           </p>
           <p className="text-xs text-yellow-700 mt-1">
-            Switch to TXT/DOCX format for text highlighting, or check the violations sidebar →
+            PDF text highlighting available - violations will be highlighted in yellow
           </p>
         </div>
       )}
-      
-      <div className="flex justify-center">
-        <canvas ref={canvasRef} className="shadow-lg" />
-      </div>
 
-      {extractedText && (
-        <details className="mt-4 text-xs text-gray-500">
-          <summary className="cursor-pointer hover:text-gray-700">
-            View extracted text ({extractedText.length} characters)
-          </summary>
-          <pre className="mt-2 p-2 bg-gray-50 rounded max-h-32 overflow-auto">
-            {extractedText.substring(0, 500)}...
-          </pre>
-        </details>
-      )}
+      <div className="flex items-center justify-center" style={{ height: violationCount > 0 ? 'calc(100% - 80px)' : '100%' }}>
+        <Document
+          file={pdfUrl}
+          onLoadSuccess={onDocumentLoadSuccess}
+          loading={
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
+            </div>
+          }
+        >
+          <Page
+            pageNumber={currentPage}
+            scale={zoom / 100}
+            renderTextLayer={true}
+            renderAnnotationLayer={true}
+          />
+        </Document>
+      </div>
     </div>
   );
 }
