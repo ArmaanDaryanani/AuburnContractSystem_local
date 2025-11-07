@@ -266,9 +266,9 @@ export function DocumentViewerPaginated({
 
   return (
     <>
-      <Card className="border-gray-200 shadow-sm h-full flex flex-col overflow-hidden">
+      <Card className="border-gray-200 shadow-sm h-full">
         {/* Header */}
-        <div className="border-b border-gray-200 p-4 flex-shrink-0">
+        <div className="border-b border-gray-200 p-4">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <FileText className="h-5 w-5 text-gray-600" />
@@ -354,20 +354,19 @@ export function DocumentViewerPaginated({
 
       {/* Violations Bar */}
       {violations.length > 0 && (
-        <div className="flex-shrink-0">
-          <ViolationsBar 
-            violations={violations}
-            onViolationClick={handleViolationClick}
-            selectedViolationId={activeViolationId}
-          />
-        </div>
+        <ViolationsBar 
+          violations={violations}
+          onViolationClick={handleViolationClick}
+          selectedViolationId={activeViolationId}
+        />
       )}
 
       {/* Document viewer with pagination */}
-      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
+      <CardContent className="p-0 flex flex-col h-full">
         <div 
           ref={viewerRef} 
           className="document-viewer-paginated flex-1 overflow-hidden"
+          style={{ height: violations.length > 0 ? 'calc(100vh - 250px)' : 'calc(100vh - 190px)' }}
         >
           <div className="bg-gray-100 h-full">
             {documentType === DocumentType.DOCX && (
