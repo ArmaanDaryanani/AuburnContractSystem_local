@@ -411,6 +411,7 @@ export function DocumentViewerPaginated({
                 showSinglePage={showSinglePage}
                 onPageChange={setCurrentPage}
                 onTotalPagesChange={setTotalPages}
+                onTextExtracted={onTextExtracted}
               />
             )}
             {documentType === DocumentType.TXT && (
