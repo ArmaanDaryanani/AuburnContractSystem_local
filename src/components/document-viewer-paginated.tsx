@@ -71,7 +71,7 @@ export function DocumentViewerPaginated({
   onTextExtracted
 }: DocumentViewerPaginatedProps) {
   const [documentType, setDocumentType] = useState<DocumentType>(DocumentType.UNKNOWN);
-  const [zoom, setZoom] = useState(100);
+  const [zoom, setZoom] = useState(85);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [showSinglePage, setShowSinglePage] = useState(false);

@@ -58,7 +58,7 @@ export function PDFViewerPaginated({
     return () => ro.disconnect();
   }, []);
 
-  const displayHeight = fitHeight ? Math.floor(fitHeight * (zoom / 100)) : undefined;
+  const displayHeight = fitHeight ? Math.floor((fitHeight - 20) * (zoom / 100)) : undefined;
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
