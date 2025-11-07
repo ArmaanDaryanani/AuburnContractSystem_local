@@ -36,6 +36,7 @@ export function PDFViewerPaginated({
   const extractedOnceRef = useRef<string | null>(null);
   const pageTextsRef = useRef<string[]>([]);
   const pageItemStringsRef = useRef<string[][]>([]);
+  const pageItemOffsetsRef = useRef<Array<Array<{start: number, end: number}>>>([]);
   const pageByViolationIdRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
@@ -74,6 +75,7 @@ export function PDFViewerPaginated({
 
         const pageTexts: string[] = [];
         const pageItemStrings: string[][] = [];
+        const pageItemOffsets: Array<Array<{start: number, end: number}>> = [];
         const num = pdf.numPages;
         
         for (let p = 1; p <= num; p++) {
@@ -82,12 +84,24 @@ export function PDFViewerPaginated({
           const content = await page.getTextContent();
           const items = content.items.map((i: any) => i.str);
           pageItemStrings.push(items);
+          
+          // Build authoritative item offsets using SAME join rule as pageText
+          let itemAcc = 0;
+          const itemOffsets = items.map(str => {
+            const start = itemAcc;
+            const end = start + str.length;
+            itemAcc = end + 1; // +1 for the space in join(' ')
+            return { start, end };
+          });
+          pageItemOffsets.push(itemOffsets);
+          
           const pageText = items.join(" ");
           pageTexts.push(pageText);
         }
 
         pageTextsRef.current = pageTexts;
         pageItemStringsRef.current = pageItemStrings;
+        pageItemOffsetsRef.current = pageItemOffsets;
         
         // Build ranges immediately after extraction (Fix #4)
         let acc = 0;
@@ -163,22 +177,18 @@ export function PDFViewerPaginated({
     
     if (pageViolations.length === 0) return;
     
-    // Simple approach: assume DOM spans are sequential in the pageText
+    // Get authoritative data built during extraction
+    const items = pageItemStringsRef.current[pageIdx] || [];
+    const itemOffsets = pageItemOffsetsRef.current[pageIdx] || [];
     const pageText = pageTextsRef.current[pageIdx] || '';
     
-    console.log(`📊 Page ${pageIdx + 1}: pageText length = ${pageText.length}`);
+    console.log(`📊 Page ${pageIdx + 1}: items=${items.length}, spans=${spans.length}, pageText=${pageText.length} chars`);
     
-    // Build span offsets by accumulating actual DOM span text
-    let acc = 0;
-    const spanOffsets = spans.map(span => {
-      const text = span.textContent || '';
-      const start = acc;
-      const end = acc + text.length;
-      acc = end; // No +1, exact concatenation
-      return { start, end };
-    });
-    
-    console.log(`📊 Page ${pageIdx + 1}: Built ${spanOffsets.length} span offsets, total accumulated = ${acc}`);
+    // Guard: span count should match item count (pdf.js preserves order)
+    if (spans.length !== items.length) {
+      console.warn(`⚠️ Span/item count mismatch on page ${pageIdx + 1}: ${spans.length} spans vs ${items.length} items`);
+      // Proceed anyway - partial highlighting is better than none
+    }
     
     let firstHighlightedSpan: HTMLSpanElement | undefined = undefined;
     
@@ -187,41 +197,47 @@ export function PDFViewerPaginated({
       const localStart = Math.max(0, v.start! - gStart);
       const localEnd = Math.min(pageText.length, v.end! - gStart);
       
-      console.log(`🔍 Violation "${v.id}": global=${v.start}-${v.end}, local=${localStart}-${localEnd}, gStart=${gStart}, gEnd=${gEnd}`);
+      console.log(`🔍 Violation "${v.id}": global=${v.start}-${v.end}, local=${localStart}-${localEnd}`);
       
       if (localEnd <= localStart) {
-        console.log(`❌ Skipping "${v.id}" - localEnd <= localStart`);
+        console.log(`❌ Skipping "${v.id}" - empty range`);
         return;
       }
       
-      // Fix #5: Explicit and clearer span selection
-      let startSpan = -1, endSpan = -1;
-      for (let i = 0; i < spanOffsets.length; i++) {
-        const { start, end } = spanOffsets[i];
-        if (end > localStart && startSpan === -1) startSpan = i;    // first overlap
-        if (start < localEnd) endSpan = i;                          // extend while overlapping
+      // Find which items overlap [localStart, localEnd)
+      const itemIndices: number[] = [];
+      for (let i = 0; i < itemOffsets.length; i++) {
+        const { start, end } = itemOffsets[i];
+        if (end > localStart && start < localEnd) {
+          itemIndices.push(i);
+        }
       }
       
-      console.log(`🎯 Violation "${v.id}": startSpan=${startSpan}, endSpan=${endSpan}`);
+      console.log(`🎯 Violation "${v.id}": highlighting items [${itemIndices.join(', ')}]`);
       
-      if (startSpan === -1 || endSpan === -1) {
-        console.log(`❌ Skipping "${v.id}" - no matching spans found`);
+      if (itemIndices.length === 0) {
+        console.log(`❌ No items found for "${v.id}"`);
         return;
       }
       
-      // Highlight the spans
-      for (let i = startSpan; i <= endSpan; i++) {
+      // Highlight corresponding spans by index
+      for (const i of itemIndices) {
         const el = spans[i];
+        if (!el) {
+          console.warn(`⚠️ Span ${i} not found for item`);
+          continue;
+        }
+        
         el.classList.add('pdf-highlight');
         el.style.backgroundColor = 'rgba(250, 204, 21, 0.9)';
         el.style.boxShadow = '0 0 0 1px rgba(234, 179, 8, 0.4)';
         el.style.borderRadius = '2px';
+        el.setAttribute('data-violation-id', v.id);
         
-        // Track first highlighted span for scroll (Fix #6)
         if (!firstHighlightedSpan) firstHighlightedSpan = el;
       }
       
-      console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${pageIdx + 1} for violation "${v.id}"`);
+      console.log(`✨ Highlighted ${itemIndices.length} spans on page ${pageIdx + 1} for violation "${v.id}"`);
     });
     
     // Fix #6: Gentle auto-scroll to first highlighted span
