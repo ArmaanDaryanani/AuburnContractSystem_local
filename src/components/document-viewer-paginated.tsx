@@ -146,10 +146,21 @@ export function DocumentViewerPaginated({
     setSelectedViolation(violation);
     
     // Use the resolved page number from our page resolution map
-    const targetPage = violation.pageNumber || 1;
+    const targetPage = violation.pageNumber;
+    
+    if (!targetPage) {
+      console.log(`⚠️ Violation "${violation.id}" not found in PDF - cannot navigate`);
+      return;
+    }
     
     console.log(`Navigating to page ${targetPage} for violation:`, violation.id);
     setCurrentPage(targetPage);
+    
+    // Trigger highlight after page renders
+    requestAnimationFrame(() => {
+      const event = new CustomEvent('highlight-trigger');
+      window.dispatchEvent(event);
+    });
     
     // After page loads, try to find and highlight the specific violation
     setTimeout(() => {

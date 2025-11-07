@@ -25,6 +25,8 @@ const normalizeText = (s: string) =>
     .replace(/[‐-‒–—]/g, '-')
     .replace(/[ﬁ]/g, 'fi')
     .replace(/[ﬂ]/g, 'fl')
+    .replace(/[""]/g, '"')
+    .replace(/['']/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -62,11 +64,11 @@ export function PDFViewerPaginated({
     v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
   ).length;
 
-  const tokens = violations
-    ?.map(v => v.problematicText)
-    .filter(Boolean)
-    .filter(t => t !== 'MISSING_CLAUSE')
-    .slice(0, 20) as string[];
+  const tokens = Array.from(new Set(
+    violations
+      .map(v => normalizeText(v.problematicText || ''))
+      .filter(t => t && t !== 'MISSING_CLAUSE' && t.length >= 10)
+  ));
 
   useEffect(() => {
     if (!file) return;
@@ -133,69 +135,80 @@ export function PDFViewerPaginated({
     });
   }, [violations]);
 
+  const runHighlight = useCallback((spans: HTMLSpanElement[]) => {
+    spans.forEach(s => s.classList.remove('pdf-highlight'));
+    
+    const spanNorms = spans.map(s => normalizeText(s.textContent || ''));
+    const nonEmpty = spanNorms.filter(seg => seg.length > 0);
+    const pageNorm = nonEmpty.join(' ');
+    
+    tokens.forEach(token => {
+      const tokenNorm = token;
+      const pageLower = pageNorm.toLowerCase();
+      const tokenLower = tokenNorm.toLowerCase();
+      
+      const idx = pageLower.indexOf(tokenLower);
+      if (idx === -1) return;
+      
+      let acc = 0;
+      let startSpan = -1;
+      let endSpan = -1;
+      let seen = 0;
+      
+      for (let i = 0; i < spanNorms.length; i++) {
+        const seg = spanNorms[i];
+        const segLen = seg.length;
+        const segEnd = acc + segLen;
+        
+        if (startSpan === -1 && segEnd > idx) startSpan = i;
+        if (startSpan !== -1 && segEnd >= idx + tokenNorm.length) {
+          endSpan = i;
+          break;
+        }
+        
+        acc = segEnd + (segLen > 0 && seen < nonEmpty.length - 1 ? 1 : 0);
+        if (segLen > 0) seen++;
+      }
+      
+      if (startSpan !== -1 && endSpan !== -1) {
+        for (let i = startSpan; i <= endSpan; i++) {
+          spans[i].classList.add('pdf-highlight');
+        }
+        console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${currentPage}`);
+      }
+    });
+  }, [tokens, currentPage]);
+
   useEffect(() => {
     if (!pdfUrl || violationCount === 0 || tokens.length === 0) return;
     
-    const highlightTimeout = setTimeout(() => {
-      const pageEl = document.querySelector(
-        `.react-pdf__Page[data-page-number="${currentPage}"]`
-      ) as HTMLElement | null;
-      const textLayer = pageEl?.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
-      
-      if (!textLayer) {
-        console.log(`⚠️ No text layer on page ${currentPage} (may be image/scan)`);
-        return;
-      }
-      
-      const spans = Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
-      
-      if (spans.length === 0) {
-        console.log(`⚠️ No text spans found on page ${currentPage}, retrying...`);
-        return;
-      }
-      
-      spans.forEach(s => s.classList.remove('pdf-highlight'));
-      
-      const spanNorms = spans.map(s => normalizeText(s.textContent || ''));
-      const pageNorm = spanNorms.join(' ');
-      
-      tokens.forEach(token => {
-        if (!token || token.length < 10) return;
-        
-        const tokenNorm = normalizeText(token);
-        const pageLower = pageNorm.toLowerCase();
-        const tokenLower = tokenNorm.toLowerCase();
-        
-        const idx = pageLower.indexOf(tokenLower);
-        if (idx === -1) return;
-        
-        let acc = 0;
-        let startSpan = -1;
-        let endSpan = -1;
-        
-        for (let i = 0; i < spanNorms.length; i++) {
-          const seg = spanNorms[i];
-          const segEnd = acc + seg.length;
-          
-          if (startSpan === -1 && segEnd > idx) startSpan = i;
-          if (startSpan !== -1 && segEnd >= idx + tokenNorm.length) {
-            endSpan = i;
-            break;
-          }
-          acc = segEnd + 1;
-        }
-        
-        if (startSpan !== -1 && endSpan !== -1) {
-          for (let i = startSpan; i <= endSpan; i++) {
-            spans[i].classList.add('pdf-highlight');
-          }
-          console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${currentPage}`);
+    const pageEl = document.querySelector(
+      `.react-pdf__Page[data-page-number="${currentPage}"]`
+    ) as HTMLElement | null;
+    const textLayer = pageEl?.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
+    
+    if (!textLayer) {
+      console.log(`⚠️ No text layer on page ${currentPage}`);
+      return;
+    }
+    
+    const ensureSpans = () => Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
+    let spans = ensureSpans();
+    
+    if (spans.length === 0) {
+      const mo = new MutationObserver(() => {
+        spans = ensureSpans();
+        if (spans.length > 0) {
+          mo.disconnect();
+          runHighlight(spans);
         }
       });
-    }, 800);
+      mo.observe(textLayer, { childList: true, subtree: true });
+      return () => mo.disconnect();
+    }
     
-    return () => clearTimeout(highlightTimeout);
-  }, [pdfUrl, currentPage, violationCount, tokens, zoom]);
+    runHighlight(spans);
+  }, [pdfUrl, currentPage, violationCount, tokens, zoom, runHighlight]);
 
   if (!pdfUrl) {
     return (
