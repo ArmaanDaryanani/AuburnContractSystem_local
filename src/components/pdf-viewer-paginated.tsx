@@ -46,6 +46,16 @@ export function PDFViewerPaginated({
     onTotalPagesChange(numPages);
   };
 
+  const violationCount = violations.filter(v => 
+    v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
+  ).length;
+
+  const tokens = violations
+    ?.map(v => v.problematicText)
+    .filter(Boolean)
+    .filter(t => t !== 'MISSING_CLAUSE')
+    .slice(0, 20) as string[];
+
   useEffect(() => {
     if (!file) return;
     if (extractedOnceRef.current === file.name) return;
@@ -82,24 +92,6 @@ export function PDFViewerPaginated({
     return () => { cancelled = true; };
   }, [file, onTextExtracted]);
 
-  if (!pdfUrl) {
-    return (
-      <div className="flex items-center justify-center h-full bg-white rounded-lg">
-        <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
-      </div>
-    );
-  }
-
-  const violationCount = violations.filter(v => 
-    v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
-  ).length;
-
-  const tokens = violations
-    ?.map(v => v.problematicText)
-    .filter(Boolean)
-    .filter(t => t !== 'MISSING_CLAUSE')
-    .slice(0, 20) as string[];
-
   useEffect(() => {
     if (!pdfUrl || violationCount === 0) return;
     
@@ -128,6 +120,14 @@ export function PDFViewerPaginated({
     
     return () => clearTimeout(highlightTimeout);
   }, [pdfUrl, currentPage, violationCount, tokens]);
+
+  if (!pdfUrl) {
+    return (
+      <div className="flex items-center justify-center h-full bg-white rounded-lg">
+        <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="bg-white h-full flex flex-col overflow-hidden">
