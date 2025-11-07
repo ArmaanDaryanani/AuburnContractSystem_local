@@ -169,8 +169,9 @@ export default function ContractReviewSimplified() {
       setRiskScore(result.riskScore || 0);
       setHasAnalyzed(true);
       
-      // Analysis complete - no toast needed
+      // Analysis complete - log violations details
       console.log(`Analysis complete: Found ${result.violations?.length || 0} compliance issues`);
+      console.log('🔍 Violations detail:', JSON.stringify(result.violations, null, 2));
       
     } catch (error) {
       console.error('Analysis error:', error);

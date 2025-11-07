@@ -100,36 +100,30 @@ export function PDFViewerPaginated({
       if (!textLayer) return;
       
       const textSpans = textLayer.querySelectorAll('span');
-      const allText = Array.from(textSpans).map(span => span.textContent || '').join(' ').toLowerCase();
       
       tokens.forEach(token => {
-        if (!token || token.length < 10) return;
+        if (!token || token.length < 5) return;
         
-        const searchPhrase = token.toLowerCase().trim();
-        if (!allText.includes(searchPhrase)) return;
+        const searchWords = token
+          .toLowerCase()
+          .replace(/[""]/g, '"')
+          .replace(/['']/g, "'")
+          .split(/\s+/)
+          .filter(w => w.length > 3);
         
-        let currentText = '';
-        const matchingSpans: HTMLSpanElement[] = [];
+        if (searchWords.length === 0) return;
+        
+        const uniqueWords = [...new Set(searchWords.slice(0, 8))];
         
         textSpans.forEach(span => {
-          const spanText = span.textContent?.toLowerCase() || '';
-          currentText += spanText;
+          const spanText = (span.textContent || '').toLowerCase();
           
-          if (searchPhrase.includes(spanText) && spanText.trim().length > 0) {
-            matchingSpans.push(span as HTMLSpanElement);
-            
-            if (currentText.includes(searchPhrase)) {
-              matchingSpans.forEach(s => {
-                s.style.backgroundColor = 'rgba(254, 240, 138, 0.6)';
-                s.style.borderRadius = '2px';
-                s.style.padding = '1px 0';
-              });
-              matchingSpans.length = 0;
-              currentText = '';
-            }
-          } else if (matchingSpans.length > 0) {
-            matchingSpans.length = 0;
-            currentText = spanText;
+          const matchCount = uniqueWords.filter(word => spanText.includes(word)).length;
+          
+          if (matchCount >= Math.min(2, uniqueWords.length)) {
+            (span as HTMLSpanElement).style.backgroundColor = 'rgba(254, 240, 138, 0.7)';
+            (span as HTMLSpanElement).style.borderRadius = '2px';
+            (span as HTMLSpanElement).style.padding = '2px 1px';
           }
         });
       });
