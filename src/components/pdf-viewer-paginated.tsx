@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
 import { Loader2 } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
@@ -31,6 +31,7 @@ export function PDFViewerPaginated({
   const [pdfUrl, setPdfUrl] = useState<string>("");
   const [numPages, setNumPages] = useState<number>(0);
   const extractedOnceRef = useRef<string | null>(null);
+  const [renderTick, setRenderTick] = useState(0);
 
   useEffect(() => {
     let url = "";
@@ -45,6 +46,10 @@ export function PDFViewerPaginated({
     setNumPages(numPages);
     onTotalPagesChange(numPages);
   };
+
+  const onPageRenderSuccess = useCallback(() => {
+    setRenderTick(t => t + 1);
+  }, []);
 
   const violationCount = violations.filter(v => 
     v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
@@ -98,13 +103,20 @@ export function PDFViewerPaginated({
     if (!pdfUrl || violationCount === 0 || tokens.length === 0) return;
     
     const highlightTimeout = setTimeout(() => {
-      const textLayer = document.querySelector('.react-pdf__Page__textContent');
-      if (!textLayer) return;
+      const pageEl = document.querySelector(
+        `.react-pdf__Page[data-page-number="${currentPage}"]`
+      ) as HTMLElement | null;
+      const textLayer = pageEl?.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
+      
+      if (!textLayer) {
+        console.log('❌ No text layer found for page', currentPage);
+        return;
+      }
       
       const textSpans = Array.from(textLayer.querySelectorAll('span'));
       const fullText = textSpans.map(s => s.textContent || '').join(' ');
       
-      console.log('📄 Full page text length:', fullText.length);
+      console.log(`📄 Page ${currentPage} text length:`, fullText.length);
       
       tokens.forEach(token => {
         if (!token || token.length < 10) return;
@@ -146,16 +158,16 @@ export function PDFViewerPaginated({
               (textSpans[i] as HTMLSpanElement).style.borderRadius = '2px';
               (textSpans[i] as HTMLSpanElement).style.padding = '2px 1px';
             }
-            console.log(`✨ Highlighted spans ${startSpan} to ${endSpan}`);
+            console.log(`✨ Highlighted spans ${startSpan} to ${endSpan} on page ${currentPage}`);
           }
         } else {
-          console.log('❌ No match found for:', token.substring(0, 30));
+          console.log(`❌ No match found on page ${currentPage}`);
         }
       });
     }, 500);
     
     return () => clearTimeout(highlightTimeout);
-  }, [pdfUrl, currentPage, violationCount, tokens]);
+  }, [pdfUrl, currentPage, violationCount, tokens, renderTick]);
 
   if (!pdfUrl) {
     return (
@@ -194,6 +206,7 @@ export function PDFViewerPaginated({
               scale={zoom / 100}
               renderTextLayer={true}
               renderAnnotationLayer={true}
+              onRenderSuccess={onPageRenderSuccess}
             />
           </Document>
         </div>
