@@ -243,19 +243,11 @@ export function DocumentViewerPaginated({
   };
   
   const handlePreviousPage = () => {
-    if (showSinglePage) {
-      setCurrentPage(prev => Math.max(1, prev - 1));
-    } else {
-      setCurrentPage(prev => Math.max(1, prev - 2));
-    }
+    setCurrentPage(prev => Math.max(1, prev - 1));
   };
   
   const handleNextPage = () => {
-    if (showSinglePage) {
-      setCurrentPage(prev => Math.min(totalPages, prev + 1));
-    } else {
-      setCurrentPage(prev => Math.min(totalPages - 1, prev + 2));
-    }
+    setCurrentPage(prev => Math.min(totalPages, prev + 1));
   };
 
   const togglePageView = () => {
