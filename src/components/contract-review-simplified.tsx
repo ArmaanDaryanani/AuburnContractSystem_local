@@ -202,8 +202,8 @@ export default function ContractReviewSimplified() {
   };
 
   return (
-    <div className={file ? "h-dvh flex flex-col overflow-hidden" : "min-h-dvh bg-gray-50"}>
-      <div className={file ? "flex-1 flex flex-col min-h-0" : "max-w-7xl mx-auto p-6"}>
+    <div className={file ? "h-dvh flex flex-col" : "min-h-dvh bg-gray-50"}>
+      <div className={file ? "flex-1 flex flex-col min-h-0 overflow-auto" : "max-w-7xl mx-auto p-6"}>
         {/* Header - Only show when no document */}
         {!file && (
           <div className="mb-6">

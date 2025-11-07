@@ -6,8 +6,8 @@ import { AuthWrapper } from "@/components/auth/auth-wrapper";
 export default function HomePage() {
   return (
     <AuthWrapper>
-      <div className="flex h-dvh bg-white overflow-hidden">
-        <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex h-dvh bg-white">
+        <div className="flex-1 flex flex-col">
           <ContractReviewSimplified />
         </div>
       </div>
