@@ -12,20 +12,34 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { text, cachedText, fileName, useAI = true } = body;
     
-    // Use cachedText (the exact rendered PDF text) if available, otherwise fall back to text
+    // Strict payload validation
+    if (!cachedText && !text) {
+      return NextResponse.json(
+        { error: 'No contract text provided' },
+        { status: 400 }
+      );
+    }
+    
+    // Warn if mismatched (shouldn't happen with new client code)
+    if (cachedText && text && cachedText !== text) {
+      console.warn('⚠️ [/api/contract/analyze] Text mismatch between cachedText and text. Using cachedText.');
+    }
+    
+    // Single source of truth: cachedText (from PDF/DOCX viewer extraction)
     const contractText = cachedText || text;
     
     console.log('📄 [/api/contract/analyze] Processing:', {
       fileName,
-      textLength: contractText?.length,
+      contractTextLength: contractText.length,
       useAI,
       hasApiKey: !!OPENROUTER_API_KEY,
-      usingCachedText: !!cachedText
+      usingCachedText: !!cachedText,
+      usingFallbackText: !cachedText && !!text
     });
 
-    if (!contractText) {
+    if (!contractText || contractText.length === 0) {
       return NextResponse.json(
-        { error: 'No contract text provided' },
+        { error: 'Empty contract text' },
         { status: 400 }
       );
     }

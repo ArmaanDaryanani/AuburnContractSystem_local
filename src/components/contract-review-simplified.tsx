@@ -22,7 +22,9 @@ import { detectDocumentType } from "@/lib/document-utils";
 
 export default function ContractReviewSimplified() {
   const [file, setFile] = useState<File | null>(null);
-  const [contractText, setContractText] = useState("");
+  const [pdfText, setPdfText] = useState("");
+  const [docxText, setDocxText] = useState("");
+  const [textReady, setTextReady] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [violations, setViolations] = useState<ViolationDetail[]>([]);
   const [confidence, setConfidence] = useState(0);
@@ -41,31 +43,13 @@ export default function ContractReviewSimplified() {
       setFile(file);
       setHasAnalyzed(false);
       setViolations([]);
+      setPdfText("");
+      setDocxText("");
+      setTextReady(false);
       
-      // Silent processing - no toast
-      
-      try {
-        // For DOCX files, skip initial extraction as the paginated viewer will handle it
-        const docType = detectDocumentType(file);
-        if (docType.type === 'docx') {
-          console.log('DOCX file detected, skipping initial extraction');
-          // Don't set contract text yet - wait for paginated viewer to extract it
-        } else {
-          const extracted = await extractTextFromFile(file);
-          
-          if (extracted.error) {
-            // Log warning silently
-            console.warn('Extraction warning:', extracted.error);
-          }
-          
-          setContractText(extracted.text);
-        }
-        
-        // Document loaded silently
-      } catch (error: any) {
-        console.error('Error processing file:', error);
-        console.error('Error loading document:', error.message || "Failed to extract text from document");
-      }
+      // For PDFs, text extraction happens in PDFViewerPaginated via onTextExtracted
+      // For DOCX, text extraction happens in DocumentViewerPaginated via onTextExtracted
+      console.log('File loaded:', file.name, 'Type:', file.type);
     }
   };
 
@@ -76,46 +60,34 @@ export default function ContractReviewSimplified() {
       setFile(file);
       setHasAnalyzed(false);
       setViolations([]);
+      setPdfText("");
+      setDocxText("");
+      setTextReady(false);
       
-      // Silent processing - no toast
-      
-      try {
-        // For DOCX files, skip initial extraction as the paginated viewer will handle it
-        const docType = detectDocumentType(file);
-        if (docType.type === 'docx') {
-          console.log('DOCX file detected, skipping initial extraction');
-          // Don't set contract text yet - wait for paginated viewer to extract it
-        } else {
-          const extracted = await extractTextFromFile(file);
-          
-          if (extracted.error) {
-            // Log warning silently
-            console.warn('Extraction warning:', extracted.error);
-          }
-          
-          setContractText(extracted.text);
-        }
-        
-        // Document loaded silently
-      } catch (error: any) {
-        console.error('Error processing dropped file:', error);
-        console.error('Error loading document:', error.message || "Failed to extract text from document");
-      }
+      // For PDFs, text extraction happens in PDFViewerPaginated via onTextExtracted
+      // For DOCX, text extraction happens in DocumentViewerPaginated via onTextExtracted
+      console.log('File dropped:', file.name, 'Type:', file.type);
     }
-  }, [toast]);
+  }, []);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
   };
 
   const analyzeContract = async () => {
-    if (!contractText) {
-      console.warn("No document loaded - Please upload a contract document first.");
+    const isPDF = file?.type?.toLowerCase().includes('pdf');
+    const contractText = isPDF ? pdfText : docxText;
+    
+    // Guard: ensure text is ready
+    if (!contractText || contractText.length === 0) {
+      console.warn("Text not ready - please wait for extraction to complete");
       return;
     }
 
-    console.log('🔍 Starting analysis with text length:', contractText.length);
-    console.log('📝 Sample text:', contractText.substring(0, 500));
+    console.log('🔍 Starting analysis');
+    console.log('📊 File type:', isPDF ? 'PDF' : 'DOCX');
+    console.log('📊 Text length:', contractText.length);
+    console.log('📝 Sample text:', contractText.substring(0, 200));
 
     setIsAnalyzing(true);
     setAnalysisProgress(0);
@@ -134,17 +106,18 @@ export default function ContractReviewSimplified() {
     }, 200);
 
     try {
-      // Try AI analysis first
+      // Send ONLY cachedText (one source of truth)
       const response = await fetch("/api/contract/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text: contractText,
-          cachedText: contractText, // Send the exact text we're rendering
+          cachedText: contractText, // ONLY field - no text/contractText confusion
           fileName: file?.name || "contract.txt",
           useAI: true
         }),
       });
+      
+      console.log('📤 Sent to API:', contractText.length, 'chars');
 
       let result;
       if (response.ok) {
@@ -153,7 +126,8 @@ export default function ContractReviewSimplified() {
       } else {
         console.log('⚠️ API failed, using local analysis');
         // Fallback to local analysis
-        const analysis = contractAnalyzer.current.analyzeContract(contractText);
+        const fallbackText = isPDF ? pdfText : docxText;
+        const analysis = contractAnalyzer.current.analyzeContract(fallbackText);
         result = {
           violations: analysis.violations,
           confidence: analysis.confidence,
@@ -177,8 +151,9 @@ export default function ContractReviewSimplified() {
           return false;
         }
         
-        if (v.end <= v.start || v.start < 0 || v.end > contractText.length) {
-          console.log(`❌ Excluding violation "${v.id}" - invalid indices (${v.start}-${v.end})`);
+        const textLength = isPDF ? pdfText.length : docxText.length;
+        if (v.end <= v.start || v.start < 0 || v.end > textLength) {
+          console.log(`❌ Excluding violation "${v.id}" - invalid indices (${v.start}-${v.end}, max: ${textLength})`);
           return false;
         }
         
@@ -198,7 +173,8 @@ export default function ContractReviewSimplified() {
       console.error('Analysis error:', error);
       
       // Fallback to TF-IDF analysis
-      const analysis = contractAnalyzer.current.analyzeContract(contractText);
+      const fallbackText = isPDF ? pdfText : docxText;
+      const analysis = contractAnalyzer.current.analyzeContract(fallbackText);
       
       clearInterval(progressInterval);
       setAnalysisProgress(100);
@@ -269,7 +245,7 @@ export default function ContractReviewSimplified() {
 
                   <Button
                     onClick={analyzeContract}
-                    disabled={!contractText || isAnalyzing}
+                    disabled={!textReady || isAnalyzing || (pdfText.length === 0 && docxText.length === 0)}
                     className="w-full mt-4"
                   >
                     {isAnalyzing ? (
@@ -302,9 +278,16 @@ export default function ContractReviewSimplified() {
                 onAnalyze={analyzeContract}
                 isAnalyzing={isAnalyzing}
                 onTextExtracted={(text) => {
-                  console.log('📄 Text extracted from DOCX, length:', text.length);
+                  const isPDF = file?.type?.toLowerCase().includes('pdf');
+                  console.log(`📄 Text extracted from ${isPDF ? 'PDF' : 'DOCX'}, length:`, text.length);
                   console.log('📄 Sample of extracted text:', text.substring(0, 200));
-                  setContractText(text);
+                  
+                  if (isPDF) {
+                    setPdfText(text);
+                  } else {
+                    setDocxText(text);
+                  }
+                  setTextReady(true);
                 }}
               />
             )}
