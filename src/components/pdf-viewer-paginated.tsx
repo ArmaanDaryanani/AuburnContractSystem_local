@@ -115,7 +115,6 @@ export function PDFViewerPaginated({
     if (pageTextsRef.current.length === 0 || violations.length === 0) return;
     
     const pageBuffers = pageTextsRef.current.map(normalizeText);
-    const pageByViolationId = new Map<string, number>();
 
     violations.forEach(v => {
       const t = normalizeText(v.problematicText || '');
@@ -126,14 +125,12 @@ export function PDFViewerPaginated({
       );
       
       if (pageIdx !== -1) {
-        pageByViolationId.set(v.id, pageIdx + 1);
+        v.pageNumber = pageIdx + 1;
         console.log(`✅ Found violation "${v.id}" on page ${pageIdx + 1}:`, t.substring(0, 50));
       } else {
         console.log(`⚠️ Violation "${v.id}" not found in PDF text:`, t.substring(0, 50));
       }
     });
-    
-    pageByViolationIdRef.current = pageByViolationId;
   }, [violations]);
 
   useEffect(() => {

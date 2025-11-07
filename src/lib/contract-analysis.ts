@@ -49,6 +49,7 @@ export interface ViolationDetail {
   farReference?: string;
   auburnPolicy?: string;
   confidence: number;
+  pageNumber?: number;
   problematicText?: string; // The actual text in the contract that triggered the violation
   isMissingClause?: boolean; // True for FAR violations about missing required clauses
 }

@@ -145,34 +145,10 @@ export function DocumentViewerPaginated({
     // Show the violation popup with the correct data
     setSelectedViolation(violation);
     
-    // Based on violation type/index, estimate which page it might be on
-    // Payment issues are usually early in the contract
-    // Termination issues are usually in the middle/end
-    let targetPage = 1;
+    // Use the resolved page number from our page resolution map
+    const targetPage = violation.pageNumber || 1;
     
-    if (violation.type?.toLowerCase().includes('payment') || 
-        violation.description?.toLowerCase().includes('payment')) {
-      targetPage = Math.min(3, totalPages); // Payment terms usually in first few pages
-    } else if (violation.description?.toLowerCase().includes('invoice') || 
-               violation.description?.toLowerCase().includes('written')) {
-      targetPage = Math.min(Math.floor(totalPages * 0.3), totalPages); // Invoice terms usually early-middle
-    } else if (violation.type?.toLowerCase().includes('termination') || 
-               violation.description?.toLowerCase().includes('termination')) {
-      targetPage = Math.min(Math.floor(totalPages * 0.6), totalPages); // Usually mid-contract
-    } else if (violation.description?.toLowerCase().includes('article ix')) {
-      targetPage = Math.min(Math.floor(totalPages * 0.8), totalPages); // Later articles
-    } else if (violation.description?.toLowerCase().includes('personnel')) {
-      targetPage = Math.min(Math.floor(totalPages * 0.5), totalPages); // Usually middle
-    } else {
-      // Default distribution based on severity
-      if (violation.severity?.toLowerCase() === 'low') {
-        targetPage = Math.min(Math.floor(totalPages * 0.4), totalPages);
-      } else {
-        targetPage = Math.min(Math.max(1, Math.floor((index / violations.length) * totalPages) + 1), totalPages);
-      }
-    }
-    
-    console.log(`Navigating to page ${targetPage} for violation:`, violation.type);
+    console.log(`Navigating to page ${targetPage} for violation:`, violation.id);
     setCurrentPage(targetPage);
     
     // After page loads, try to find and highlight the specific violation
