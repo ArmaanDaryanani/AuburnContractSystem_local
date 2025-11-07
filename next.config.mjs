@@ -17,6 +17,22 @@ const nextConfig = {
         buffer: false,
       };
     }
+    
+    // Exclude transformers.js node bindings from webpack
+    config.externals = config.externals || [];
+    config.externals.push({
+      'onnxruntime-node': 'commonjs onnxruntime-node',
+      'sharp': 'commonjs sharp',
+    });
+    
+    // Ignore .node files
+    config.module = config.module || {};
+    config.module.rules = config.module.rules || [];
+    config.module.rules.push({
+      test: /\.node$/,
+      use: 'node-loader',
+    });
+    
     return config;
   },
 };

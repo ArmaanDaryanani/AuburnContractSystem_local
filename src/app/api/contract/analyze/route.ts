@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { buildEnhancedPrompt, searchFARViolations, getAuburnPolicyContext } from '@/lib/rag/rag-search';
+import { runDetections } from '@/lib/detect/run-detections';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || 'google/gemini-2.5-flash-lite';
@@ -26,22 +27,46 @@ export async function POST(request: NextRequest) {
     }
 
     if (!useAI || !OPENROUTER_API_KEY) {
-      console.log('⚠️ [/api/contract/analyze] No AI available, using pattern matching');
-      // Fallback to pattern matching
-      return NextResponse.json({
-        violations: [
-          {
-            id: "1",
-            type: "indemnification",
-            severity: "HIGH",
-            description: "Auburn cannot provide indemnification as a state entity",
-            confidence: 0.85
-          }
-        ],
-        confidence: 85,
-        riskScore: 3.5,
-        method: "pattern-matching"
-      });
+      console.log('⚠️ [/api/contract/analyze] No LLM available, using AI clause detection with FAR/T&C rules');
+      
+      try {
+        const detections = await runDetections(text, {
+          useAI: true,
+          minConfidence: 0.3,
+          fuzzyThreshold: 0.35,
+        });
+        
+        const violations = detections.map(d => ({
+          id: d.id,
+          type: d.category.toLowerCase().replace(/\s+/g, '-'),
+          severity: d.severity,
+          title: d.type === 'MISSING_CLAUSE' ? `Missing: ${d.category}` : `Problematic: ${d.category}`,
+          description: d.explanation || '',
+          problematicText: d.exactText,
+          auburnPolicy: d.preferredLanguage,
+          farReference: d.reference,
+          confidence: d.confidence,
+          pageNumber: d.pageNumber,
+          isMissingClause: d.type === 'MISSING_CLAUSE',
+        }));
+        
+        return NextResponse.json({
+          violations,
+          confidence: detections.length > 0 ? 85 : 95,
+          riskScore: Math.min(detections.filter(d => d.severity === 'CRITICAL' || d.severity === 'HIGH').length * 2, 10),
+          method: "ai-clause-detection",
+          summary: `Found ${detections.length} compliance issues using AI clause detection`
+        });
+      } catch (detectionError) {
+        console.error('⚠️ [/api/contract/analyze] AI detection failed:', detectionError);
+        return NextResponse.json({
+          violations: [],
+          confidence: 50,
+          riskScore: 0,
+          method: "detection-failed",
+          error: 'AI detection system failed'
+        });
+      }
     }
 
     // Use RAG to build enhanced prompt with real Auburn policies and FAR regulations

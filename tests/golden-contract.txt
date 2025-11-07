@@ -1,0 +1,62 @@
+RESEARCH AGREEMENT
+
+This Agreement is entered into as of January 15, 2025, between Auburn University ("Auburn") and TechCorp Industries ("Sponsor").
+
+1. SCOPE OF WORK
+
+Auburn will conduct research related to advanced materials science under the direction of Dr. Jane Smith. The research will include laboratory testing, data analysis, and development of new composite materials.
+
+2. PAYMENT TERMS
+
+Sponsor shall pay Auburn the total amount of $250,000 within sixty (60) days of receiving payment from the federal funding agency. Payment shall be made in three milestone-based installments as follows:
+- $83,333 upon completion of Phase 1
+- $83,333 upon completion of Phase 2
+- $83,334 upon final deliverable submission
+
+3. INTELLECTUAL PROPERTY
+
+All intellectual property, inventions, discoveries, and work product created under this Agreement shall be the sole property of Sponsor. Auburn hereby assigns all rights, title, and interest in any such intellectual property to Sponsor.
+
+4. INDEMNIFICATION
+
+Auburn agrees to indemnify, defend, and hold harmless Sponsor, its officers, directors, employees, and agents from and against any and all claims, damages, losses, and expenses arising out of or resulting from Auburn's performance under this Agreement.
+
+5. INSURANCE
+
+Auburn shall obtain and maintain commercial general liability insurance with minimum coverage of $2,000,000 per occurrence and $5,000,000 aggregate. Auburn shall provide Sponsor with certificates of insurance prior to commencing work.
+
+6. DISPUTE RESOLUTION
+
+In the event of any dispute arising from this Agreement, the parties agree to submit to binding arbitration in accordance with the rules of the American Arbitration Association. The arbitrator's decision shall be final and binding on both parties.
+
+7. EQUIPMENT
+
+Title to all equipment purchased under this Agreement shall vest with Sponsor upon purchase. Auburn shall return all equipment to Sponsor within 30 days of Agreement termination.
+
+8. PUBLICATION
+
+Auburn shall not publish any results or findings from the research without prior written approval from Sponsor. Sponsor reserves the right to review and approve any proposed publications at least 90 days prior to submission.
+
+9. CONFIDENTIALITY
+
+All information exchanged under this Agreement shall be treated as confidential and proprietary to Sponsor. Auburn shall maintain the confidentiality of all Sponsor information indefinitely.
+
+10. TERMINATION
+
+This Agreement may be terminated by either party for cause with 15 days written notice. Upon termination, Auburn shall return all Sponsor property and cease all research activities immediately.
+
+11. GOVERNING LAW
+
+This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware.
+
+12. ENTIRE AGREEMENT
+
+This Agreement constitutes the entire agreement between the parties and supersedes all prior negotiations, representations, or agreements.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
+
+Auburn University                    TechCorp Industries
+By: _________________               By: _________________
+Name: _______________               Name: _______________
+Title: ______________               Title: ______________
+Date: _______________               Date: _______________

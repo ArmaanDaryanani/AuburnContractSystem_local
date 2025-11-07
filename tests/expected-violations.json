@@ -1,0 +1,100 @@
+{
+  "testContract": "golden-contract.txt",
+  "expectedViolations": [
+    {
+      "category": "Payment",
+      "type": "PROBLEMATIC_TEXT",
+      "severity": "HIGH",
+      "patterns": [
+        "sixty (60) days",
+        "receiving payment from",
+        "milestone-based"
+      ],
+      "reason": "Auburn requires NET 30 payment terms, not contingent on receiving federal funds or milestone-based",
+      "auburnPolicy": "NET 30 days from receipt of invoice"
+    },
+    {
+      "category": "IP",
+      "type": "PROBLEMATIC_TEXT",
+      "severity": "CRITICAL",
+      "patterns": [
+        "shall be the sole property of Sponsor",
+        "Auburn hereby assigns"
+      ],
+      "reason": "Auburn faculty must retain IP rights for their research work",
+      "auburnPolicy": "Faculty retain intellectual property rights"
+    },
+    {
+      "category": "Indemnification",
+      "type": "PROBLEMATIC_TEXT",
+      "severity": "CRITICAL",
+      "patterns": [
+        "Auburn agrees to indemnify",
+        "hold harmless"
+      ],
+      "reason": "Auburn cannot provide indemnification as a state entity",
+      "auburnPolicy": "Auburn is prohibited from indemnifying third parties"
+    },
+    {
+      "category": "Insurance",
+      "type": "PROBLEMATIC_TEXT",
+      "severity": "HIGH",
+      "patterns": [
+        "Auburn shall obtain and maintain",
+        "commercial general liability insurance",
+        "certificates of insurance"
+      ],
+      "reason": "Auburn is self-insured through State of Alabama and cannot provide commercial insurance",
+      "auburnPolicy": "Auburn is self-insured through the State of Alabama"
+    },
+    {
+      "category": "DisputeResolution",
+      "type": "PROBLEMATIC_TEXT",
+      "severity": "HIGH",
+      "patterns": [
+        "binding arbitration",
+        "arbitrator's decision shall be final"
+      ],
+      "reason": "Auburn has sovereign immunity and cannot agree to binding arbitration",
+      "auburnPolicy": "Disputes resolved through mediation (non-binding) or Alabama State Board of Adjustment"
+    },
+    {
+      "category": "Equipment",
+      "type": "PROBLEMATIC_TEXT",
+      "severity": "MEDIUM",
+      "patterns": [
+        "Title to all equipment",
+        "shall vest with Sponsor"
+      ],
+      "reason": "Auburn prefers equipment to vest with the university",
+      "auburnPolicy": "Equipment purchased under agreement should vest with Auburn"
+    },
+    {
+      "category": "Publication",
+      "type": "PROBLEMATIC_TEXT",
+      "severity": "HIGH",
+      "patterns": [
+        "shall not publish",
+        "prior written approval",
+        "90 days prior to submission"
+      ],
+      "reason": "Auburn faculty must preserve publication rights for research",
+      "auburnPolicy": "Faculty retain publication rights with reasonable sponsor review period (30-60 days)"
+    },
+    {
+      "category": "Termination",
+      "type": "MISSING_CLAUSE",
+      "severity": "MEDIUM",
+      "reason": "Missing termination for convenience clause",
+      "auburnPolicy": "Agreements should include termination for convenience with 30 days notice"
+    }
+  ],
+  "minimumDetections": 7,
+  "criticalIssues": 3,
+  "highIssues": 4,
+  "notes": [
+    "This contract intentionally violates multiple Auburn policies and FAR requirements",
+    "Used for testing the AI detection system's accuracy",
+    "All violations should be detected with confidence > 0.7"
+  ]
+}

@@ -96,7 +96,7 @@ export function fuzzySearchClause(
 /**
  * Extract exact text span using regex with word boundaries
  */
-function extractExactSpan(
+export function extractExactSpan(
   text: string,
   pattern: string
 ): { text: string; start: number; end: number } | null {
