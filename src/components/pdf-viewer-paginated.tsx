@@ -113,7 +113,7 @@ export function PDFViewerPaginated({
         
         if (searchWords.length === 0) return;
         
-        const uniqueWords = [...new Set(searchWords.slice(0, 8))];
+        const uniqueWords = Array.from(new Set(searchWords.slice(0, 8)));
         
         textSpans.forEach(span => {
           const spanText = (span.textContent || '').toLowerCase();
