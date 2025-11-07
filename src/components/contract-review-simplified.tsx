@@ -164,14 +164,26 @@ export default function ContractReviewSimplified() {
       clearInterval(progressInterval);
       setAnalysisProgress(100);
       
-      setViolations(result.violations || []);
+      // Filter to only show violations that can be highlighted in the PDF
+      const validViolations = (result.violations || []).filter(v => {
+        if (!v.problematicText || v.problematicText === 'MISSING_CLAUSE') {
+          return true; // Keep missing clause violations
+        }
+        if (!v.pageNumber) {
+          console.log(`❌ Excluding violation "${v.id}" - not found in PDF`);
+          return false;
+        }
+        return true;
+      });
+      
+      setViolations(validViolations);
       setConfidence(result.confidence || 85);
       setRiskScore(result.riskScore || 0);
       setHasAnalyzed(true);
       
       // Analysis complete - log violations details
-      console.log(`Analysis complete: Found ${result.violations?.length || 0} compliance issues`);
-      console.log('🔍 Violations detail:', JSON.stringify(result.violations, null, 2));
+      console.log(`Analysis complete: Found ${validViolations.length} highlightable compliance issues (${result.violations?.length || 0} total detected)`);
+      console.log('🔍 Violations detail:', JSON.stringify(validViolations, null, 2));
       
     } catch (error) {
       console.error('Analysis error:', error);
