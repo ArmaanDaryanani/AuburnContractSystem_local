@@ -364,12 +364,12 @@ export function DocumentViewerPaginated({
       )}
 
       {/* Document viewer with pagination */}
-      <CardContent className="p-0 flex-1 flex flex-col min-h-0">
+      <CardContent className="p-0 flex flex-col flex-1 min-h-0">
         <div 
           ref={viewerRef} 
-          className="document-viewer-paginated flex-1 min-h-0 overflow-hidden"
+          className="document-viewer-paginated flex-1 overflow-hidden"
         >
-          <div className="bg-gray-100 h-full w-full">
+          <div className="bg-gray-100 h-full">
             {documentType === DocumentType.DOCX && (
               <DOCXViewerPaginated
                 file={file}
@@ -413,10 +413,10 @@ export function DocumentViewerPaginated({
           </div>
         </div>
 
-        {/* Page Navigation Footer - Fixed Height */}
+        {/* Page Navigation Footer */}
         {totalPages > 0 && (
-          <div className="h-14 flex-shrink-0 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200 px-4">
-            <div className="h-full flex items-center justify-center gap-4">
+          <div className="flex-shrink-0 bg-gradient-to-t from-gray-50 to-white border-t border-gray-200 px-4 py-3">
+            <div className="flex items-center justify-center gap-4">
               <Button
                 onClick={handlePreviousPage}
                 disabled={currentPage === 1}

@@ -110,26 +110,23 @@ export function PDFViewerPaginated({
         </div>
       )}
 
-      <div className="flex-1 flex items-center justify-center overflow-auto bg-gray-50 p-4">
-        <div className="max-h-full">
-          <Document
-            file={pdfUrl}
-            onLoadSuccess={onDocumentLoadSuccess}
-            loading={
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
-              </div>
-            }
-          >
-            <Page
-              pageNumber={currentPage}
-              scale={zoom / 100}
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-              className="max-h-full"
-            />
-          </Document>
-        </div>
+      <div className="flex-1 flex items-center justify-center overflow-hidden bg-gray-50">
+        <Document
+          file={pdfUrl}
+          onLoadSuccess={onDocumentLoadSuccess}
+          loading={
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="h-12 w-12 text-gray-400 animate-spin" />
+            </div>
+          }
+        >
+          <Page
+            pageNumber={currentPage}
+            scale={zoom / 100}
+            renderTextLayer={true}
+            renderAnnotationLayer={true}
+          />
+        </Document>
       </div>
     </div>
   );
