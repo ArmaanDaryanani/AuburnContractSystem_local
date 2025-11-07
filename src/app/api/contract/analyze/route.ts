@@ -130,7 +130,7 @@ Return a JSON response with this EXACT structure:
       "severity": "CRITICAL|HIGH|MEDIUM|LOW",
       "title": "Brief title of violation",
       "description": "Detailed explanation of the issue",
-      "problematicText": "MUST BE 50-150 WORDS of COMPLETE UNTRUNCATED verbatim text copied exactly from the contract above. Include full sentences. Do NOT shorten or truncate - copy the entire relevant section word-for-word.",
+      "problematicText": "MUST BE 50-150 WORDS of COMPLETE UNTRUNCATED verbatim text copied EXACTLY CHARACTER-FOR-CHARACTER from the contract above, preserving ALL spacing, line breaks, and formatting. Include full sentences. Do NOT shorten, truncate, or reformat - copy the entire relevant section EXACTLY as it appears, including any unusual spacing like 'D ecember' if that's how it appears in the source.",
       "auburnPolicy": "Which Auburn policy is violated",
       "farReference": "FAR clause number if applicable",
       "suggestion": "Auburn-compliant replacement text",
@@ -149,9 +149,10 @@ Return a JSON response with this EXACT structure:
 CRITICAL REQUIREMENTS FOR problematicText:
 1. Must be 50-150 words verbatim from the contract
 2. Must NOT be truncated - copy complete sentences/paragraphs
-3. Must match the contract text EXACTLY character-for-character
-4. Include enough context so the quote is findable in the PDF
-5. Do NOT summarize or paraphrase - this breaks the highlighting system
+3. Must match the contract text EXACTLY character-for-character INCLUDING unusual spacing (like "D ecember" if that's how it appears)
+4. Do NOT normalize, reformat, or clean up the text - preserve it EXACTLY as shown above
+5. Include enough context so the quote is findable in the PDF
+6. Do NOT summarize or paraphrase - this breaks the highlighting system
 
 Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
 
