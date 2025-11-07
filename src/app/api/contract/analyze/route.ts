@@ -130,7 +130,7 @@ Return a JSON response with this EXACT structure:
       "severity": "CRITICAL|HIGH|MEDIUM|LOW",
       "title": "Brief title of violation",
       "description": "Detailed explanation of the issue",
-      "problematicText": "Exact quote from contract",
+      "problematicText": "COPY THE EXACT VERBATIM TEXT from the contract word-for-word. This must be a direct quote of at least 10-30 words from the contract that demonstrates the violation. DO NOT paraphrase or summarize - copy the exact text.",
       "auburnPolicy": "Which Auburn policy is violated",
       "farReference": "FAR clause number if applicable",
       "suggestion": "Auburn-compliant replacement text",
@@ -145,6 +145,8 @@ Return a JSON response with this EXACT structure:
     "auburnPoliciesMatched": ${indemnityContext.length + paymentContext.length}
   }
 }
+
+CRITICAL: For each violation, the "problematicText" field MUST contain the EXACT VERBATIM text from the contract. Copy it word-for-word from the contract text above. This is essential for highlighting to work.
 
 Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
 

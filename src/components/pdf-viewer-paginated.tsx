@@ -56,6 +56,8 @@ export function PDFViewerPaginated({
     .filter(t => t !== 'MISSING_CLAUSE')
     .slice(0, 20) as string[];
 
+  console.log('🎯 Tokens to highlight:', tokens);
+
   useEffect(() => {
     if (!file) return;
     if (extractedOnceRef.current === file.name) return;
@@ -99,33 +101,56 @@ export function PDFViewerPaginated({
       const textLayer = document.querySelector('.react-pdf__Page__textContent');
       if (!textLayer) return;
       
-      const textSpans = textLayer.querySelectorAll('span');
+      const textSpans = Array.from(textLayer.querySelectorAll('span'));
+      const fullText = textSpans.map(s => s.textContent || '').join(' ');
+      
+      console.log('📄 Full page text length:', fullText.length);
       
       tokens.forEach(token => {
-        if (!token || token.length < 5) return;
+        if (!token || token.length < 10) return;
         
-        const searchWords = token
-          .toLowerCase()
-          .replace(/[""]/g, '"')
-          .replace(/['']/g, "'")
-          .split(/\s+/)
-          .filter(w => w.length > 3);
+        console.log('🔍 Searching for:', token.substring(0, 50) + '...');
         
-        if (searchWords.length === 0) return;
+        const normalizedToken = token.trim().replace(/\s+/g, ' ');
+        const normalizedFullText = fullText.replace(/\s+/g, ' ');
         
-        const uniqueWords = Array.from(new Set(searchWords.slice(0, 8)));
+        const index = normalizedFullText.toLowerCase().indexOf(normalizedToken.toLowerCase());
         
-        textSpans.forEach(span => {
-          const spanText = (span.textContent || '').toLowerCase();
+        if (index !== -1) {
+          console.log('✅ Found match at index:', index);
           
-          const matchCount = uniqueWords.filter(word => spanText.includes(word)).length;
+          let charCount = 0;
+          let startSpan = -1;
+          let endSpan = -1;
           
-          if (matchCount >= Math.min(2, uniqueWords.length)) {
-            (span as HTMLSpanElement).style.backgroundColor = 'rgba(254, 240, 138, 0.7)';
-            (span as HTMLSpanElement).style.borderRadius = '2px';
-            (span as HTMLSpanElement).style.padding = '2px 1px';
+          for (let i = 0; i < textSpans.length; i++) {
+            const spanText = textSpans[i].textContent || '';
+            const spanStart = charCount;
+            const spanEnd = charCount + spanText.length;
+            
+            if (startSpan === -1 && spanEnd > index) {
+              startSpan = i;
+            }
+            
+            if (startSpan !== -1 && spanEnd >= index + normalizedToken.length) {
+              endSpan = i;
+              break;
+            }
+            
+            charCount += spanText.length + 1;
           }
-        });
+          
+          if (startSpan !== -1 && endSpan !== -1) {
+            for (let i = startSpan; i <= endSpan; i++) {
+              (textSpans[i] as HTMLSpanElement).style.backgroundColor = 'rgba(254, 240, 138, 0.8)';
+              (textSpans[i] as HTMLSpanElement).style.borderRadius = '2px';
+              (textSpans[i] as HTMLSpanElement).style.padding = '2px 1px';
+            }
+            console.log(`✨ Highlighted spans ${startSpan} to ${endSpan}`);
+          }
+        } else {
+          console.log('❌ No match found for:', token.substring(0, 30));
+        }
       });
     }, 500);
     
