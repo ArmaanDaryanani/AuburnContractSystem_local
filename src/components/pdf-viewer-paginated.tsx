@@ -215,7 +215,18 @@ export function PDFViewerPaginated({
   }, [violations]);
 
   useEffect(() => {
-    if (!pdfUrl || violationCount === 0 || rangesRef.current.length === 0) return;
+    console.log('🎨 Highlight effect triggered:', {
+      pdfUrl: !!pdfUrl,
+      currentPage,
+      violationCount,
+      rangesLength: rangesRef.current.length,
+      violations: violations.length
+    });
+    
+    if (!pdfUrl || violationCount === 0 || rangesRef.current.length === 0) {
+      console.log('⏸️ Skipping highlight:', { noPdfUrl: !pdfUrl, noViolations: violationCount === 0, noRanges: rangesRef.current.length === 0 });
+      return;
+    }
     
     const pageEl = document.querySelector(
       `.react-pdf__Page[data-page-number="${currentPage}"]`
@@ -231,10 +242,14 @@ export function PDFViewerPaginated({
     const ensureSpans = () => Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
     let spans = ensureSpans();
     
+    console.log(`📄 Page ${currentPage}: Found ${spans.length} spans`);
+    
     if (spans.length === 0) {
+      console.log('⏳ Waiting for spans to populate via MutationObserver');
       const mo = new MutationObserver(() => {
         spans = ensureSpans();
         if (spans.length > 0) {
+          console.log(`✅ Spans populated: ${spans.length} spans`);
           mo.disconnect();
           runHighlight(spans, pageIdx);
         }
@@ -243,8 +258,9 @@ export function PDFViewerPaginated({
       return () => mo.disconnect();
     }
     
+    console.log(`▶️ Calling runHighlight for page ${currentPage} with ${spans.length} spans`);
     runHighlight(spans, pageIdx);
-  }, [pdfUrl, currentPage, violationCount, zoom, runHighlight]);
+  }, [pdfUrl, currentPage, violationCount, zoom, runHighlight, violations]);
 
   if (!pdfUrl) {
     return (
