@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import './pdf-viewer-paginated.css';
 
 interface PDFViewerPaginatedProps {
   file: File;
@@ -17,6 +18,15 @@ interface PDFViewerPaginatedProps {
   onTotalPagesChange: (total: number) => void;
   onTextExtracted?: (text: string) => void;
 }
+
+const normalizeText = (s: string) =>
+  s
+    .replace(/\u00AD/g, '')
+    .replace(/[‐-‒–—]/g, '-')
+    .replace(/[ﬁ]/g, 'fi')
+    .replace(/[ﬂ]/g, 'fl')
+    .replace(/\s+/g, ' ')
+    .trim();
 
 export function PDFViewerPaginated({
   file,
@@ -33,6 +43,7 @@ export function PDFViewerPaginated({
   const extractedOnceRef = useRef<string | null>(null);
   const [renderTick, setRenderTick] = useState(0);
   const pageTextsRef = useRef<string[]>([]);
+  const pageByViolationIdRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     let url = "";
@@ -93,25 +104,26 @@ export function PDFViewerPaginated({
 
         pageTextsRef.current = pageTexts;
 
-        const pageTextNorm = (txt: string) => txt.replace(/\s+/g, ' ').trim();
-        const pageBuffers = pageTexts.map(pageTextNorm);
+        const pageBuffers = pageTexts.map(normalizeText);
+        const pageByViolationId = new Map<string, number>();
 
         violations.forEach(v => {
-          const t = (v.problematicText || '').replace(/\s+/g, ' ').trim();
+          const t = normalizeText(v.problematicText || '');
           if (!t || t === 'MISSING_CLAUSE') return;
 
-          for (let i = 0; i < pageBuffers.length; i++) {
-            if (pageBuffers[i].toLowerCase().includes(t.toLowerCase())) {
-              v.pageNumber = i + 1;
-              console.log(`✅ Found violation on page ${i + 1}:`, t.substring(0, 50));
-              break;
-            }
-          }
+          const pageIdx = pageBuffers.findIndex(pg => 
+            pg.toLowerCase().includes(t.toLowerCase())
+          );
           
-          if (!v.pageNumber) {
-            console.log('❌ Violation text not found in any page:', t.substring(0, 50));
+          if (pageIdx !== -1) {
+            pageByViolationId.set(v.id, pageIdx + 1);
+            console.log(`✅ Found violation "${v.id}" on page ${pageIdx + 1}`);
+          } else {
+            console.log(`⚠️ Violation "${v.id}" not found in PDF text:`, t.substring(0, 50));
           }
         });
+        
+        pageByViolationIdRef.current = pageByViolationId;
 
         if (onTextExtracted) {
           onTextExtracted(allText);
@@ -133,23 +145,22 @@ export function PDFViewerPaginated({
       ) as HTMLElement | null;
       const textLayer = pageEl?.querySelector('.react-pdf__Page__textContent') as HTMLElement | null;
       
-      if (!textLayer) return;
+      if (!textLayer) {
+        console.log(`⚠️ No text layer on page ${currentPage} (may be image/scan)`);
+        return;
+      }
       
       const spans = Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
       
-      spans.forEach(s => {
-        s.style.backgroundColor = '';
-        s.style.borderRadius = '';
-        s.style.padding = '';
-      });
+      spans.forEach(s => s.classList.remove('pdf-highlight'));
       
-      const spanNorms = spans.map(s => (s.textContent || '').replace(/\s+/g, ' '));
+      const spanNorms = spans.map(s => normalizeText(s.textContent || ''));
       const pageNorm = spanNorms.join(' ');
       
       tokens.forEach(token => {
         if (!token || token.length < 10) return;
         
-        const tokenNorm = token.replace(/\s+/g, ' ').trim();
+        const tokenNorm = normalizeText(token);
         const pageLower = pageNorm.toLowerCase();
         const tokenLower = tokenNorm.toLowerCase();
         
@@ -162,7 +173,6 @@ export function PDFViewerPaginated({
         
         for (let i = 0; i < spanNorms.length; i++) {
           const seg = spanNorms[i];
-          const segStart = acc;
           const segEnd = acc + seg.length;
           
           if (startSpan === -1 && segEnd > idx) startSpan = i;
@@ -175,9 +185,7 @@ export function PDFViewerPaginated({
         
         if (startSpan !== -1 && endSpan !== -1) {
           for (let i = startSpan; i <= endSpan; i++) {
-            spans[i].style.backgroundColor = 'rgba(254, 240, 138, 0.8)';
-            spans[i].style.borderRadius = '2px';
-            spans[i].style.padding = '1px 0';
+            spans[i].classList.add('pdf-highlight');
           }
           console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${currentPage}`);
         }
@@ -185,7 +193,7 @@ export function PDFViewerPaginated({
     }, 500);
     
     return () => clearTimeout(highlightTimeout);
-  }, [pdfUrl, currentPage, violationCount, tokens, renderTick]);
+  }, [pdfUrl, currentPage, violationCount, tokens, renderTick, zoom]);
 
   if (!pdfUrl) {
     return (
