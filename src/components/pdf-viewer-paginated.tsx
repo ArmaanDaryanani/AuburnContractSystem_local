@@ -119,43 +119,34 @@ export function PDFViewerPaginated({
   useEffect(() => {
     if (pageTextsRef.current.length === 0 || violations.length === 0) return;
     
-    const pageBuffers = pageTextsRef.current.map(normalizeText);
+    // Build cumulative character ranges for each page
+    let acc = 0;
+    const ranges = pageTextsRef.current.map(pageText => {
+      const start = acc;
+      const end = acc + pageText.length;
+      acc = end + 1; // +1 for newline between pages
+      return { start, end };
+    });
 
     violations.forEach(v => {
-      const t = normalizeText(v.problematicText || '');
-      if (!t || t === 'MISSING_CLAUSE') return;
-
-      // Try exact match first
-      let pageIdx = pageBuffers.findIndex(pg => 
-        pg.toLowerCase().includes(t.toLowerCase())
-      );
+      if (!v.problematicText || v.problematicText === 'MISSING_CLAUSE') return;
       
-      if (pageIdx !== -1) {
-        v.pageNumber = pageIdx + 1;
-        console.log(`✅ Found violation "${v.id}" on page ${pageIdx + 1}:`, t.substring(0, 50));
-        return;
-      }
-
-      // Fuzzy match: extract significant words and try matching
-      const words = t.split(/\s+/).filter(w => w.length > 3);
-      if (words.length >= 3) {
-        // Try first 10 words, then 7, then 5, then 3
-        for (const wordCount of [10, 7, 5, 3]) {
-          if (words.length < wordCount) continue;
-          
-          const searchPhrase = words.slice(0, wordCount).join(' ').toLowerCase();
-          pageIdx = pageBuffers.findIndex(pg => 
-            pg.toLowerCase().includes(searchPhrase)
-          );
-          
-          if (pageIdx !== -1) {
-            v.pageNumber = pageIdx + 1;
-            console.log(`🔍 Fuzzy match (${wordCount} words) for "${v.id}" on page ${pageIdx + 1}`);
+      // Use start index if provided by AI
+      if (typeof v.start === 'number' && v.start >= 0) {
+        // Binary search to find which page contains this index
+        let lo = 0, hi = ranges.length - 1;
+        while (lo <= hi) {
+          const mid = (lo + hi) >> 1;
+          const { start, end } = ranges[mid];
+          if (v.start < start) hi = mid - 1;
+          else if (v.start >= end) lo = mid + 1;
+          else {
+            v.pageNumber = mid + 1; // Convert to 1-based
+            console.log(`✅ Mapped violation "${v.id}" to page ${mid + 1} using index ${v.start}`);
             return;
           }
         }
-        
-        console.log(`❌ No match found for "${v.id}". Tried words:`, words.slice(0, 10).join(' '));
+        console.log(`⚠️ Index ${v.start} out of range for "${v.id}"`);
       }
     });
   }, [violations]);
