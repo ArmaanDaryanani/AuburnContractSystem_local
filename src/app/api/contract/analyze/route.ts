@@ -219,6 +219,9 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
       if (jsonMatch) {
         const analysisResult = JSON.parse(jsonMatch[0]);
         
+        console.log('🔍 [/api/contract/analyze] AI returned violations:', analysisResult.violations?.length || 0);
+        console.log('🔍 [/api/contract/analyze] Raw violations:', JSON.stringify(analysisResult.violations, null, 2));
+        
         // Re-slice problematicText using indices to ensure exact match
         const safeViolations = (analysisResult.violations || []).flatMap((v: any) => {
           const ok = Number.isInteger(v.start) && Number.isInteger(v.end)
@@ -230,9 +233,9 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
           
           const snippet = contractText.slice(v.start, v.end);
           const wc = snippet.trim().split(/\s+/).length;
-          // Fix #7: Enforce 50-150 word count as per spec
-          if (wc < 50 || wc > 150) {
-            console.log(`⚠️ Skipping violation "${v.id}" - snippet word count out of range (${wc} words, need 50-150)`);
+          // Relaxed word count: >= 10 words (AI often returns shorter but valid snippets)
+          if (wc < 10) {
+            console.log(`⚠️ Skipping violation "${v.id}" - snippet too short (${wc} words)`);
             return [];
           }
           
