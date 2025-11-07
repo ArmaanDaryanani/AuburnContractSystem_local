@@ -216,8 +216,9 @@ Be thorough and identify ALL compliance issues. Return ONLY valid JSON.`;
           
           const snippet = contractText.slice(v.start, v.end);
           const wc = snippet.trim().split(/\s+/).length;
-          if (wc < 10) {
-            console.log(`⚠️ Skipping violation "${v.id}" - snippet too short (${wc} words)`);
+          // Fix #7: Enforce 50-150 word count as per spec
+          if (wc < 50 || wc > 150) {
+            console.log(`⚠️ Skipping violation "${v.id}" - snippet word count out of range (${wc} words, need 50-150)`);
             return [];
           }
           

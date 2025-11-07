@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { ViolationDetail } from "@/lib/contract-analysis";
+import { PAGE_JOINER } from "@/lib/text-joiner";
 import { Loader2 } from "lucide-react";
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
@@ -19,19 +20,6 @@ interface PDFViewerPaginatedProps {
   onTextExtracted?: (text: string) => void;
 }
 
-const normalizeText = (s: string) =>
-  s
-    .normalize('NFKC')
-    .replace(/[\u200B-\u200D\uFEFF]/g, '')
-    .replace(/\u00A0/g, ' ')
-    .replace(/\u00AD/g, '')
-    .replace(/[‐-‒–—]/g, '-')
-    .replace(/\uFB01/g, 'fi')
-    .replace(/\uFB02/g, 'fl')
-    .replace(/[\u201C\u201D]/g, '"')
-    .replace(/[\u2018\u2019]/g, "'")
-    .replace(/\s+/g, ' ')
-    .trim();
 
 export function PDFViewerPaginated({
   file,
@@ -47,6 +35,7 @@ export function PDFViewerPaginated({
   const [numPages, setNumPages] = useState<number>(0);
   const extractedOnceRef = useRef<string | null>(null);
   const pageTextsRef = useRef<string[]>([]);
+  const pageItemStringsRef = useRef<string[][]>([]);
   const pageByViolationIdRef = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
@@ -67,12 +56,6 @@ export function PDFViewerPaginated({
     v.problematicText && v.problematicText !== 'MISSING_CLAUSE'
   ).length;
 
-  const tokens = Array.from(new Set(
-    violations
-      .map(v => normalizeText(v.problematicText || ''))
-      .filter(t => t && t !== 'MISSING_CLAUSE' && t.length >= 10)
-  ));
-
   useEffect(() => {
     if (!file) return;
     if (extractedOnceRef.current === file.name) return;
@@ -90,20 +73,34 @@ export function PDFViewerPaginated({
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
         const pageTexts: string[] = [];
-        let allText = "";
+        const pageItemStrings: string[][] = [];
         const num = pdf.numPages;
         
         for (let p = 1; p <= num; p++) {
           if (cancelled) return;
           const page = await pdf.getPage(p);
           const content = await page.getTextContent();
-          const pageText = content.items.map((i: any) => i.str).join(" ");
+          const items = content.items.map((i: any) => i.str);
+          pageItemStrings.push(items);
+          const pageText = items.join(" ");
           pageTexts.push(pageText);
-          allText += pageText + "\n";
         }
 
         pageTextsRef.current = pageTexts;
-        console.log(`📚 Cached ${pageTexts.length} pages of text`);
+        pageItemStringsRef.current = pageItemStrings;
+        
+        // Build ranges immediately after extraction (Fix #4)
+        let acc = 0;
+        const ranges = pageTexts.map(pageText => {
+          const start = acc;
+          const end = acc + pageText.length;
+          acc = end + PAGE_JOINER.length;
+          return { start, end };
+        });
+        rangesRef.current = ranges;
+        
+        const allText = pageTexts.join(PAGE_JOINER);
+        console.log(`📚 Cached ${pageTexts.length} pages of text (total: ${allText.length} chars)`);
 
         if (onTextExtracted) {
           onTextExtracted(allText);
@@ -116,120 +113,109 @@ export function PDFViewerPaginated({
     return () => { cancelled = true; };
   }, [file, onTextExtracted]);
 
+  const rangesRef = useRef<Array<{start: number, end: number}>>([]);
+  
+  // Map violations to pages using binary search (Fix #4: now depends only on violations, ranges built during extraction)
   useEffect(() => {
-    if (pageTextsRef.current.length === 0 || violations.length === 0) return;
+    if (rangesRef.current.length === 0 || violations.length === 0) return;
     
-    // Build cumulative character ranges for each page using same JOINER as text extraction
-    const JOINER = "\n";
-    let acc = 0;
-    const ranges = pageTextsRef.current.map(pageText => {
-      const start = acc;
-      const end = acc + pageText.length;
-      acc = end + JOINER.length; // MUST match the joiner used in text extraction
-      return { start, end };
-    });
+    const ranges = rangesRef.current;
 
     violations.forEach(v => {
       if (!v.problematicText || v.problematicText === 'MISSING_CLAUSE') return;
       
-      // Use start index if provided by AI
-      if (typeof v.start === 'number' && v.start >= 0) {
-        // Binary search to find which page contains this index
-        let lo = 0, hi = ranges.length - 1;
-        while (lo <= hi) {
-          const mid = (lo + hi) >> 1;
-          const { start, end } = ranges[mid];
-          if (v.start < start) hi = mid - 1;
-          else if (v.start >= end) lo = mid + 1;
-          else {
-            v.pageNumber = mid + 1; // Convert to 1-based
-            console.log(`✅ Mapped violation "${v.id}" to page ${mid + 1} using index ${v.start}-${v.end}`);
-            return;
-          }
+      // Fix #1: Don't treat 0 as falsy
+      if (typeof v.start !== 'number' || typeof v.end !== 'number') return;
+      
+      // Binary search to find which page contains this index
+      let lo = 0, hi = ranges.length - 1;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        const { start, end } = ranges[mid];
+        if (v.start < start) hi = mid - 1;
+        else if (v.start >= end) lo = mid + 1;
+        else {
+          v.pageNumber = mid + 1; // Convert to 1-based
+          console.log(`✅ Mapped violation "${v.id}" to page ${mid + 1} using index ${v.start}-${v.end}`);
+          return;
         }
-        console.log(`⚠️ Index ${v.start} out of range for "${v.id}" (max: ${ranges[ranges.length-1]?.end})`);
       }
+      // Fix #8: Better logging with max range
+      console.warn(`⚠️ Index ${v.start}..${v.end} out of range for "${v.id}" (0..${ranges[ranges.length-1]?.end})`);
     });
   }, [violations]);
 
-  const runHighlight = useCallback((spans: HTMLSpanElement[]) => {
+  const runHighlight = useCallback((spans: HTMLSpanElement[], pageIdx: number) => {
     spans.forEach(s => s.classList.remove('pdf-highlight'));
     
-    const spanNorms = spans.map(s => normalizeText(s.textContent || ''));
-    const nonEmpty = spanNorms.filter(seg => seg.length > 0);
-    const pageNorm = nonEmpty.join(' ');
+    const ranges = rangesRef.current;
+    if (ranges.length === 0) return;
     
-    tokens.forEach(token => {
-      const tokenNorm = token;
-      const pageLower = pageNorm.toLowerCase();
-      const tokenLower = tokenNorm.toLowerCase();
-      
-      const idx = pageLower.indexOf(tokenLower);
-      if (idx === -1) return;
-      
-      let acc = 0;
-      let startSpan = -1;
-      let endSpan = -1;
-      let seen = 0;
-      
-      for (let i = 0; i < spanNorms.length; i++) {
-        const seg = spanNorms[i];
-        const segLen = seg.length;
-        const segEnd = acc + segLen;
-        
-        if (startSpan === -1 && segEnd > idx) startSpan = i;
-        if (startSpan !== -1 && segEnd >= idx + tokenNorm.length) {
-          endSpan = i;
-          break;
-        }
-        
-        acc = segEnd + (segLen > 0 && seen < nonEmpty.length - 1 ? 1 : 0);
-        if (segLen > 0) seen++;
-      }
-      
-      if (startSpan !== -1 && endSpan !== -1) {
-        for (let i = startSpan; i <= endSpan; i++) {
-          const el = spans[i];
-          el.classList.add('pdf-highlight');
-          el.style.backgroundColor = 'rgba(250, 204, 21, 0.9)';
-          el.style.boxShadow = '0 0 0 1px rgba(234, 179, 8, 0.4)';
-          el.style.borderRadius = '2px';
-        }
-
-        const layer = spans[0].closest('.react-pdf__Page__textContent') as HTMLElement;
-        if (layer) {
-          layer.querySelectorAll('.pdf-highlight-box').forEach(n => n.remove());
-
-          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-          const layerRect = layer.getBoundingClientRect();
-
-          for (let i = startSpan; i <= endSpan; i++) {
-            const r = spans[i].getBoundingClientRect();
-            minX = Math.min(minX, r.left);
-            minY = Math.min(minY, r.top);
-            maxX = Math.max(maxX, r.right);
-            maxY = Math.max(maxY, r.bottom);
-          }
-
-          const box = document.createElement('div');
-          box.className = 'pdf-highlight-box';
-          box.style.left = `${minX - layerRect.left - 2}px`;
-          box.style.top = `${minY - layerRect.top - 2}px`;
-          box.style.width = `${(maxX - minX) + 4}px`;
-          box.style.height = `${(maxY - minY) + 4}px`;
-          layer.appendChild(box);
-
-          box.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
-        }
-
-        console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${currentPage}`);
-        console.log(`📍 Highlighted text:`, spans.slice(startSpan, endSpan + 1).map(s => s.textContent).join(''));
-      }
+    const { start: gStart, end: gEnd } = ranges[pageIdx];
+    
+    // Find violations that overlap with this page (Fix #1: typeof checks)
+    const pageViolations = violations.filter(v => {
+      if (typeof v.start !== 'number' || typeof v.end !== 'number') return false;
+      if (v.problematicText === 'MISSING_CLAUSE') return false;
+      // Check if violation overlaps with this page
+      return v.start < gEnd && v.end > gStart;
     });
-  }, [tokens, currentPage]);
+    
+    if (pageViolations.length === 0) return;
+    
+    // Fix #3 Option A: Build offsets from same string used for pageTextsRef
+    const pageText = pageTextsRef.current[pageIdx] || '';
+    let acc = 0;
+    const spanOffsets = spans.map(s => {
+      const text = s.textContent || '';
+      const start = acc;
+      const end = acc + text.length;
+      acc = end; // Fix #2: No synthetic +1 space
+      return { start, end };
+    });
+    
+    let firstHighlightedSpan: HTMLSpanElement | undefined = undefined;
+    
+    pageViolations.forEach(v => {
+      // Compute local offsets within this page
+      const localStart = Math.max(0, v.start! - gStart);
+      const localEnd = Math.min(pageText.length, v.end! - gStart);
+      
+      if (localEnd <= localStart) return;
+      
+      // Fix #5: Explicit and clearer span selection
+      let startSpan = -1, endSpan = -1;
+      for (let i = 0; i < spanOffsets.length; i++) {
+        const { start, end } = spanOffsets[i];
+        if (end > localStart && startSpan === -1) startSpan = i;    // first overlap
+        if (start < localEnd) endSpan = i;                          // extend while overlapping
+      }
+      
+      if (startSpan === -1 || endSpan === -1) return;
+      
+      // Highlight the spans
+      for (let i = startSpan; i <= endSpan; i++) {
+        const el = spans[i];
+        el.classList.add('pdf-highlight');
+        el.style.backgroundColor = 'rgba(250, 204, 21, 0.9)';
+        el.style.boxShadow = '0 0 0 1px rgba(234, 179, 8, 0.4)';
+        el.style.borderRadius = '2px';
+        
+        // Track first highlighted span for scroll (Fix #6)
+        if (!firstHighlightedSpan) firstHighlightedSpan = el;
+      }
+      
+      console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${pageIdx + 1} for violation "${v.id}"`);
+    });
+    
+    // Fix #6: Gentle auto-scroll to first highlighted span
+    if (firstHighlightedSpan) {
+      (firstHighlightedSpan as HTMLSpanElement).scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+    }
+  }, [violations]);
 
   useEffect(() => {
-    if (!pdfUrl || violationCount === 0 || tokens.length === 0) return;
+    if (!pdfUrl || violationCount === 0 || rangesRef.current.length === 0) return;
     
     const pageEl = document.querySelector(
       `.react-pdf__Page[data-page-number="${currentPage}"]`
@@ -241,6 +227,7 @@ export function PDFViewerPaginated({
       return;
     }
     
+    const pageIdx = currentPage - 1; // Convert to 0-based index
     const ensureSpans = () => Array.from(textLayer.querySelectorAll('span')) as HTMLSpanElement[];
     let spans = ensureSpans();
     
@@ -249,15 +236,15 @@ export function PDFViewerPaginated({
         spans = ensureSpans();
         if (spans.length > 0) {
           mo.disconnect();
-          runHighlight(spans);
+          runHighlight(spans, pageIdx);
         }
       });
       mo.observe(textLayer, { childList: true, subtree: true });
       return () => mo.disconnect();
     }
     
-    runHighlight(spans);
-  }, [pdfUrl, currentPage, violationCount, tokens, zoom, runHighlight]);
+    runHighlight(spans, pageIdx);
+  }, [pdfUrl, currentPage, violationCount, zoom, runHighlight]);
 
   if (!pdfUrl) {
     return (
