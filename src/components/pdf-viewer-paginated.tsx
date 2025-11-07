@@ -163,15 +163,34 @@ export function PDFViewerPaginated({
     
     if (pageViolations.length === 0) return;
     
-    // Fix #3 Option A: Build offsets from same string used for pageTextsRef
+    // Fix #3 Option A: Build offsets from the AUTHORITATIVE pageText string
     const pageText = pageTextsRef.current[pageIdx] || '';
+    const pageItems = pageItemStringsRef.current[pageIdx] || [];
+    
+    // Build authoritative offsets from pageItems (same source as pageText)
     let acc = 0;
-    const spanOffsets = spans.map(s => {
-      const text = s.textContent || '';
+    const itemOffsets = pageItems.map(item => {
       const start = acc;
-      const end = acc + text.length;
-      acc = end; // Fix #2: No synthetic +1 space
-      return { start, end };
+      const end = acc + item.length;
+      acc = end + 1; // +1 for the space joiner we used in items.join(" ")
+      return { start, end, text: item };
+    });
+    
+    // Map DOM spans to itemOffsets by matching text content
+    const spanOffsets = spans.map(span => {
+      const spanText = (span.textContent || '').trim();
+      
+      // Find matching item offset
+      for (let i = 0; i < itemOffsets.length; i++) {
+        const item = itemOffsets[i];
+        if (item.text.includes(spanText) || spanText.includes(item.text)) {
+          return { start: item.start, end: item.end };
+        }
+      }
+      
+      // Fallback: assume sequential mapping
+      const idx = spans.indexOf(span);
+      return itemOffsets[Math.min(idx, itemOffsets.length - 1)] || { start: 0, end: 0 };
     });
     
     let firstHighlightedSpan: HTMLSpanElement | undefined = undefined;
