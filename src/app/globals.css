@@ -191,9 +191,24 @@ mark.highlight-selected {
 }
 
 /* PDF Highlighting */
+.react-pdf__Page__textContent {
+  position: absolute;
+  inset: 0;
+  z-index: 3 !important;
+}
+
 .pdf-highlight {
-  background-color: rgba(254, 240, 138, 0.95) \!important;
+  background-color: rgba(254, 240, 138, 0.95) !important;
   border-radius: 2px;
-  padding: 2px 1px \!important;
-  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.4) \!important;
+  padding: 2px 1px !important;
+  box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.4) !important;
+}
+
+.pdf-highlight-box {
+  position: absolute;
+  background: rgba(250, 204, 21, 0.25);
+  outline: 2px solid rgba(250, 204, 21, 0.9);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 4;
 }

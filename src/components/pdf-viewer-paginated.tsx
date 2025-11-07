@@ -21,12 +21,15 @@ interface PDFViewerPaginatedProps {
 
 const normalizeText = (s: string) =>
   s
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '')
+    .replace(/\u00A0/g, ' ')
     .replace(/\u00AD/g, '')
     .replace(/[‐-‒–—]/g, '-')
-    .replace(/[ﬁ]/g, 'fi')
-    .replace(/[ﬂ]/g, 'fl')
-    .replace(/[""]/g, '"')
-    .replace(/['']/g, "'")
+    .replace(/\uFB01/g, 'fi')
+    .replace(/\uFB02/g, 'fl')
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[\u2018\u2019]/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -172,11 +175,41 @@ export function PDFViewerPaginated({
       
       if (startSpan !== -1 && endSpan !== -1) {
         for (let i = startSpan; i <= endSpan; i++) {
-          spans[i].classList.add('pdf-highlight');
+          const el = spans[i];
+          el.classList.add('pdf-highlight');
+          el.style.backgroundColor = 'rgba(250, 204, 21, 0.9)';
+          el.style.boxShadow = '0 0 0 1px rgba(234, 179, 8, 0.4)';
+          el.style.borderRadius = '2px';
         }
+
+        const layer = spans[0].closest('.react-pdf__Page__textContent') as HTMLElement;
+        if (layer) {
+          layer.querySelectorAll('.pdf-highlight-box').forEach(n => n.remove());
+
+          let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+          const layerRect = layer.getBoundingClientRect();
+
+          for (let i = startSpan; i <= endSpan; i++) {
+            const r = spans[i].getBoundingClientRect();
+            minX = Math.min(minX, r.left);
+            minY = Math.min(minY, r.top);
+            maxX = Math.max(maxX, r.right);
+            maxY = Math.max(maxY, r.bottom);
+          }
+
+          const box = document.createElement('div');
+          box.className = 'pdf-highlight-box';
+          box.style.left = `${minX - layerRect.left - 2}px`;
+          box.style.top = `${minY - layerRect.top - 2}px`;
+          box.style.width = `${(maxX - minX) + 4}px`;
+          box.style.height = `${(maxY - minY) + 4}px`;
+          layer.appendChild(box);
+
+          box.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+        }
+
         console.log(`✨ Highlighted spans ${startSpan}-${endSpan} on page ${currentPage}`);
         console.log(`📍 Highlighted text:`, spans.slice(startSpan, endSpan + 1).map(s => s.textContent).join(''));
-        console.log(`🎨 First span classes:`, spans[startSpan].className);
       }
     });
   }, [tokens, currentPage]);
